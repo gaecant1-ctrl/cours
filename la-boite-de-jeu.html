@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>La Boîte de Jeu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  :root{
+    --paper:#F6EAD2;
+    --paper-2:#EEDCB2;
+    --paper-line:#DCC796;
+    --wood-dark:#2A1C10;
+    --wood:#4A2E1B;
+    --wood-2:#5E3B22;
+    --ink:#2B2118;
+    --ink-soft:#6E5A42;
+    --red:#B23A2C;
+    --red-deep:#7C2015;
+    --gold:#C9963D;
+    --gold-soft:#E4C989;
+    --shadow: 0 18px 40px -14px rgba(20,12,4,0.45);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--wood-dark);color:var(--ink);font-family:'Work Sans', system-ui, sans-serif}
+
+  .table{
+    position:relative;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:22px;
+    padding:40px;
+    background:
+      radial-gradient(ellipse 120% 90% at 50% -10%, rgba(255,220,160,0.10), transparent 60%),
+      repeating-linear-gradient(90deg, rgba(0,0,0,0.10) 0px, rgba(0,0,0,0.10) 1px, transparent 1px, transparent 68px),
+      linear-gradient(160deg, var(--wood-2) 0%, var(--wood-dark) 78%);
+    overflow:hidden;
+  }
+
+  .deck{
+    position:relative;
+    width:min(1180px, 92vw);
+    aspect-ratio:1280/768;
+    max-height:88vh;
+    border-radius:14px;
+    box-shadow:var(--shadow), 0 0 0 10px var(--wood), 0 0 0 13px var(--gold-soft);
+    overflow:hidden;
+    background:var(--paper);
+  }
+
+  /* Canevas de taille fixe, mis à l'échelle en JS pour toujours tenir dans .deck :
+     tout le contenu ci-dessous est dessiné pour 1280x768px, jamais recalculé. */
+  .deck-inner{
+    position:absolute;
+    top:0; left:0;
+    width:1280px;
+    height:768px;
+    transform-origin:top left;
+  }
+
+  .slide{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    padding:56px 68px 44px;
+    opacity:0;
+    transform:translateX(24px);
+    transition:opacity .45s ease, transform .45s ease;
+    pointer-events:none;
+    background:var(--paper);
+  }
+  .slide.active{opacity:1; transform:translateX(0); pointer-events:auto}
+  .slide.dark{background:var(--wood-dark); color:var(--paper)}
+
+  .paper-texture::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image: radial-gradient(rgba(43,33,24,0.05) 1px, transparent 1px);
+    background-size:14px 14px;
+    pointer-events:none;
+    opacity:.6;
+  }
+
+  .eyebrow{
+    font-family:'Space Mono', monospace;
+    font-size:14px;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    color:var(--red);
+    margin:0 0 14px;
+  }
+  .slide.dark .eyebrow{color:var(--gold)}
+
+  h1,h2,h3{font-family:'Fraunces', Georgia, serif; margin:0; text-wrap:balance}
+  h1{font-size:72px; font-weight:600; line-height:1.05}
+  h2{font-size:40px; font-weight:600; line-height:1.1; color:var(--red)}
+  .slide.dark h2{color:var(--paper)}
+  h3{font-size:26px; font-weight:600; color:var(--ink)}
+  .slide.dark h3{color:var(--paper)}
+
+  p{font-size:19px; line-height:1.55; color:var(--ink); margin:0}
+  .soft{color:var(--ink-soft)}
+  .slide.dark p{color:var(--paper-2)}
+  .slide.dark .soft{color:#C9B594}
+
+  b{font-weight:700; color:var(--red)}
+  .slide.dark b{color:var(--gold)}
+
+  .kicker-row{display:flex; align-items:center; gap:10px; margin-bottom:6px}
+  .dot{width:8px; height:8px; border-radius:50%; background:var(--red)}
+
+  /* ---------- cover ---------- */
+  #s-cover{align-items:flex-start; justify-content:center; background:var(--wood-dark); color:var(--paper)}
+  .cover-grid{display:grid; grid-template-columns:1.1fr 0.9fr; gap:40px; align-items:center; width:100%; height:100%}
+  .cover-text{display:flex; flex-direction:column; gap:20px}
+  .cover-text .eyebrow{color:var(--gold)}
+  .cover-title{font-size:62px}
+  .cover-sub{font-family:'Fraunces', serif; font-style:italic; font-weight:400; font-size:26px; color:var(--gold-soft)}
+  .cover-art{position:relative; height:100%; display:flex; align-items:center; justify-content:center}
+
+  /* box illustration */
+  .box-wrap{position:relative; width:340px; height:300px; animation:riseIn 1s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes riseIn{from{opacity:0; transform:translateY(18px) scale(.96)} to{opacity:1; transform:translateY(0) scale(1)}}
+  .box-glow{position:absolute; inset:-40px; background:radial-gradient(circle at 50% 40%, rgba(228,201,137,0.35), transparent 65%); filter:blur(2px)}
+  .box-base{position:absolute; left:30px; right:30px; bottom:20px; height:120px; background:linear-gradient(180deg, var(--wood-2), var(--wood)); border-radius:6px; box-shadow:0 16px 30px -10px rgba(0,0,0,.5)}
+  .box-base::after{content:""; position:absolute; inset:6px 6px auto 6px; height:3px; background:var(--gold-soft); opacity:.5}
+  .lid{position:absolute; left:18px; right:18px; bottom:128px; height:96px; background:linear-gradient(180deg, var(--red), var(--red-deep)); border-radius:6px 6px 2px 2px; transform-origin:bottom left; transform:rotate(-26deg); box-shadow:0 14px 24px -8px rgba(0,0,0,.5); animation:lidOpen 1.1s .15s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes lidOpen{from{transform:rotate(0deg)} to{transform:rotate(-26deg)}}
+  .lid::after{content:"⬢"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--gold-soft); font-size:22px; opacity:.85}
+  .token{position:absolute; border-radius:50%; box-shadow:0 6px 10px -4px rgba(0,0,0,.5)}
+  .token-pawn{width:26px; height:26px; left:150px; bottom:150px; background:radial-gradient(circle at 32% 28%, #E1685A, var(--red-deep)); animation:popIn .6s .7s cubic-bezier(.3,1.4,.5,1) both}
+  .token-dot{width:16px; height:16px; left:110px; bottom:158px; background:radial-gradient(circle at 32% 28%, var(--gold-soft), var(--gold)); animation:popIn .6s .85s cubic-bezier(.3,1.4,.5,1) both}
+  .token-square{position:absolute; width:20px; height:20px; left:200px; bottom:156px; background:var(--paper); border:2px solid var(--gold); border-radius:3px; transform:rotate(12deg); animation:popIn .6s 1s cubic-bezier(.3,1.4,.5,1) both}
+  @keyframes popIn{from{opacity:0; transform:translateY(10px) scale(.6)} to{opacity:1; transform:translateY(0) scale(1)}}
+
+  /* ---------- rule cards (jeu slide) ---------- */
+  .pieces-row{display:flex; gap:24px; margin-top:34px}
+  .piece-card{flex:1; background:var(--paper-2); border:1px solid var(--paper-line); border-radius:12px; padding:26px 22px; display:flex; flex-direction:column; gap:12px}
+  .piece-icon{width:40px; height:40px; display:flex; align-items:center; justify-content:center}
+  .piece-card h3{font-size:22px}
+  .piece-card p{font-size:17px}
+  .closing-line{margin-top:auto; text-align:center; font-family:'Fraunces', serif; font-style:italic; font-size:24px; color:var(--red); padding-top:20px}
+
+  /* ---------- two-up layout ---------- */
+  .row{display:flex; gap:56px; align-items:flex-start; margin-top:28px}
+  .col-text{flex:0 0 42%; display:flex; flex-direction:column; gap:16px}
+  .col-art{flex:1; display:flex; align-items:center; justify-content:center; gap:22px}
+
+  .frame{
+    position:relative;
+    background:var(--paper);
+    border:2px dashed var(--red);
+    border-radius:14px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  figure{margin:0; display:flex; flex-direction:column; align-items:center; gap:10px}
+  figcaption{font-family:'Space Mono', monospace; font-size:13px; letter-spacing:1px; color:var(--ink-soft); text-transform:uppercase}
+
+  .notation-tag{display:inline-flex; align-items:center; gap:6px; font-family:'Space Mono',monospace; font-size:16px; background:var(--paper-2); border:1px solid var(--paper-line); padding:4px 10px; border-radius:6px}
+
+  /* rules dark slide */
+  #s-regles{background:var(--wood-dark)}
+  .rule-cards{display:flex; gap:28px; margin-top:30px}
+  .rule-card{flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(228,201,137,0.25); border-radius:14px; padding:32px 28px; display:flex; flex-direction:column; gap:14px}
+  .rule-card h3{color:var(--paper)}
+  .rule-card p{color:var(--paper-2); font-size:17px}
+
+  /* property slide */
+  .prop-block{background:var(--paper-2); border-left:4px solid var(--red); border-radius:4px 10px 10px 4px; padding:20px 24px; margin-top:8px}
+  .action-tag{font-family:'Space Mono', monospace; font-weight:700; letter-spacing:3px; color:var(--gold); background:var(--wood-dark); display:inline-block; padding:5px 12px; border-radius:5px; font-size:14px; margin:22px 0 12px}
+  .action-card{background:var(--paper); border:1px solid var(--paper-line); border-radius:12px; padding:22px 24px; display:flex; flex-direction:column; gap:10px; box-shadow:0 8px 20px -12px rgba(43,33,24,.3)}
+
+  /* closing */
+  #s-end{align-items:center; justify-content:center; text-align:center; background:var(--wood-dark)}
+  #s-end .eyebrow{color:var(--gold)}
+  #s-end p.lead{font-family:'Fraunces', serif; font-style:italic; font-size:26px; color:var(--gold-soft); margin-bottom:18px}
+  #s-end h2{color:var(--paper); font-size:46px}
+
+  /* ---------- nav (hors de la capsule, posée sur la table) ---------- */
+  .nav{
+    display:flex; align-items:center; justify-content:center; gap:16px;
+  }
+  .nav button{
+    width:38px; height:38px; border-radius:50%; border:1px solid var(--gold-soft);
+    background:rgba(42,28,16,0.85); color:var(--gold-soft); font-size:16px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .15s ease, background .15s ease;
+  }
+  .nav button:hover{background:var(--wood-2); transform:translateY(-1px)}
+  .nav button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+  .pips{display:flex; gap:9px}
+  .pip{width:9px; height:9px; border-radius:50%; background:rgba(230,215,180,0.35); border:none; padding:0; cursor:pointer}
+  .pip.active{background:var(--gold)}
+  .pip:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+
+  .count{
+    position:absolute; top:20px; right:26px;
+    font-family:'Space Mono', monospace; font-size:13px; color:rgba(230,215,180,0.6);
+    letter-spacing:1px; z-index:5;
+  }
+
+  /* Pas de media queries : le canevas ci-dessus est mis à l'échelle en bloc
+     (voir le script), la mise en page reste donc identique à toutes les tailles. */
+</style>
+</head>
+<body>
+
+<div class="table">
+  <div class="deck" id="deck">
+   <div class="deck-inner" id="deckInner">
+
+    <!-- 1. COVER -->
+    <section class="slide active" id="s-cover">
+      <div class="cover-grid">
+        <div class="cover-text">
+          <p class="eyebrow">Sixième · Géométrie</p>
+          <h1 class="cover-title">Bases de la géométrie</h1>
+          <p class="cover-sub">On ouvre la boîte de jeu&hellip;</p>
+        </div>
+        <div class="cover-art">
+          <div class="box-wrap">
+            <div class="box-glow"></div>
+            <div class="box-base"></div>
+            <div class="lid"></div>
+            <div class="token token-pawn"></div>
+            <div class="token token-dot"></div>
+            <div class="token-square"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. POUR JOUER IL FAUT -->
+    <section class="slide" id="s-jeu">
+      <p class="eyebrow">Avant de commencer</p>
+      <h2>Pour jouer, il faut&hellip;</h2>
+      <div class="pieces-row">
+        <div class="piece-card">
+          <div class="piece-icon">
+            <svg width="34" height="34" viewBox="0 0 34 34"><rect x="4" y="4" width="26" height="26" rx="3" fill="none" stroke="#B23A2C" stroke-width="3" stroke-dasharray="5 4"/></svg>
+          </div>
+          <h3>Un plateau</h3>
+          <p class="soft">de jeu</p>
+        </div>
+        <div class="piece-card">
+          <div class="piece-icon">
+            <svg width="34" height="34" viewBox="0 0 34 34"><circle cx="17" cy="17" r="12" fill="none" stroke="#B23A2C" stroke-width="3"/><circle cx="17" cy="17" r="3.5" fill="#B23A2C"/></svg>
+          </div>
+          <h3>Des objets</h3>
+          <p class="soft">pour jouer</p>
+        </div>
+        <div class="piece-card">
+          <div class="piece-icon">
+            <svg width="34" height="34" viewBox="0 0 34 34"><line x1="6" y1="10" x2="28" y2="10" stroke="#B23A2C" stroke-width="3"/><line x1="6" y1="18" x2="24" y2="18" stroke="#B23A2C" stroke-width="3"/><line x1="6" y1="26" x2="20" y2="26" stroke="#B23A2C" stroke-width="3"/></svg>
+          </div>
+          <h3>Des règles</h3>
+          <p class="soft">du jeu</p>
+        </div>
+      </div>
+      <p class="closing-line">En géométrie, c'est pareil !</p>
+    </section>
+
+    <!-- 3. LE PLATEAU -->
+    <section class="slide" id="s-plateau">
+      <p class="eyebrow">Le premier ingrédient</p>
+      <h2>Le plateau, c'est le plan du sol</h2>
+      <div class="row">
+        <div class="col-text">
+          <p>C'est une surface plane, et <b>mathématiquement infinie</b>.</p>
+          <p class="soft">Elle n'a pas de bord : elle continue indéfiniment dans toutes les directions.</p>
+        </div>
+        <div class="col-art">
+          <figure>
+            <div class="frame" style="width:230px; height:250px">
+              <svg width="210" height="230" viewBox="0 0 210 230" aria-label="Sol en perspective avec un pion">
+                <defs>
+                  <linearGradient id="floor" x1="0" y1="1" x2="0" y2="0">
+                    <stop offset="0%" stop-color="#EEDCB2"/>
+                    <stop offset="100%" stop-color="#F6EAD2"/>
+                  </linearGradient>
+                  <radialGradient id="pawnG" cx="35%" cy="30%" r="75%">
+                    <stop offset="0%" stop-color="#E1685A"/>
+                    <stop offset="100%" stop-color="#7C2015"/>
+                  </radialGradient>
+                </defs>
+                <polygon points="14,205 196,205 150,110 60,110" fill="url(#floor)" stroke="#B23A2C" stroke-width="2.4" stroke-dasharray="8 5"/>
+                <line x1="25.5" y1="181.25" x2="184.5" y2="181.25" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+                <line x1="37" y1="157.5" x2="173" y2="157.5" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+                <line x1="48.5" y1="133.75" x2="161.5" y2="133.75" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+                <line x1="59.5" y1="205" x2="82.5" y2="110" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+                <line x1="105" y1="205" x2="105" y2="110" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+                <line x1="150.5" y1="205" x2="127.5" y2="110" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+                <polygon points="105,86 96,108 114,108" fill="#B23A2C"/>
+                <polygon points="105,224 96,206 114,206" fill="#B23A2C"/>
+                <polygon points="4,157 24,148 24,166" fill="#B23A2C"/>
+                <polygon points="206,157 186,148 186,166" fill="#B23A2C"/>
+                <ellipse cx="105" cy="200" rx="17" ry="5" fill="#2B2118" opacity=".2"/>
+                <path d="M95,196 Q95,158 105,146 Q115,158 115,196 Z" fill="url(#pawnG)"/>
+                <ellipse cx="105" cy="196" rx="13" ry="4.5" fill="#7C2015"/>
+                <rect x="99" y="143" width="12" height="5" rx="2.5" fill="#7C2015"/>
+                <circle cx="105" cy="133" r="10.5" fill="url(#pawnG)"/>
+                <ellipse cx="101" cy="129" rx="2.6" ry="4" fill="#fff" opacity=".4"/>
+              </svg>
+            </div>
+            <figcaption>en perspective</figcaption>
+          </figure>
+          <figure>
+            <div class="frame" style="width:230px; height:250px">
+              <svg width="200" height="200" viewBox="0 0 200 200" aria-label="Plan vu en vue aérienne, infini dans toutes les directions">
+                <defs>
+                  <linearGradient id="floorTop" x1="0" y1="1" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#EEDCB2"/>
+                    <stop offset="100%" stop-color="#F6EAD2"/>
+                  </linearGradient>
+                </defs>
+                <rect x="26" y="26" width="148" height="148" fill="url(#floorTop)" stroke="#B23A2C" stroke-width="2.4" stroke-dasharray="8 5"/>
+                <line x1="63" y1="26" x2="63" y2="174" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+                <line x1="100" y1="26" x2="100" y2="174" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+                <line x1="137" y1="26" x2="137" y2="174" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+                <line x1="26" y1="63" x2="174" y2="63" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+                <line x1="26" y1="100" x2="174" y2="100" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+                <line x1="26" y1="137" x2="174" y2="137" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+                <polygon points="100,6 91,28 109,28" fill="#B23A2C"/>
+                <polygon points="100,194 91,172 109,172" fill="#B23A2C"/>
+                <polygon points="6,100 28,91 28,109" fill="#B23A2C"/>
+                <polygon points="194,100 172,91 172,109" fill="#B23A2C"/>
+              </svg>
+            </div>
+            <figcaption>vue aérienne</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. LE POINT -->
+    <section class="slide" id="s-point">
+      <p class="eyebrow">Les objets pour jouer</p>
+      <h2>Le point</h2>
+      <div class="row">
+        <div class="col-text">
+          <p>Un point désigne <b>un endroit précis</b> dans le plan.</p>
+          <p class="soft">On le note par une lettre majuscule.</p>
+          <span class="notation-tag">A &nbsp;·&nbsp; B &nbsp;·&nbsp; C</span>
+        </div>
+        <div class="col-art">
+          <div class="frame" style="width:230px; height:250px">
+            <svg width="200" height="200" viewBox="0 0 200 200" aria-label="Le point A à l'intersection de deux lignes du quadrillage">
+              <defs>
+                <linearGradient id="floorTopPt" x1="0" y1="1" x2="1" y2="0">
+                  <stop offset="0%" stop-color="#EEDCB2"/>
+                  <stop offset="100%" stop-color="#F6EAD2"/>
+                </linearGradient>
+              </defs>
+              <rect x="26" y="26" width="148" height="148" fill="url(#floorTopPt)" stroke="#B23A2C" stroke-width="2.4" stroke-dasharray="8 5"/>
+              <line x1="63" y1="26" x2="63" y2="174" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+              <line x1="100" y1="26" x2="100" y2="174" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+              <line x1="137" y1="26" x2="137" y2="174" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+              <line x1="26" y1="63" x2="174" y2="63" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+              <line x1="26" y1="100" x2="174" y2="100" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+              <line x1="26" y1="137" x2="174" y2="137" stroke="#C9963D" stroke-width="1.2" opacity=".55"/>
+              <polygon points="100,6 91,28 109,28" fill="#B23A2C"/>
+              <polygon points="100,194 91,172 109,172" fill="#B23A2C"/>
+              <polygon points="6,100 28,91 28,109" fill="#B23A2C"/>
+              <polygon points="194,100 172,91 172,109" fill="#B23A2C"/>
+              <line x1="88" y1="100" x2="112" y2="100" stroke="#2B2118" stroke-width="3.4" stroke-linecap="round"/>
+              <line x1="100" y1="88" x2="100" y2="112" stroke="#2B2118" stroke-width="3.4" stroke-linecap="round"/>
+              <text x="106" y="90" font-family="Fraunces, serif" font-size="22" fill="#2B2118">A</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. LA LIGNE -->
+    <section class="slide" id="s-ligne">
+      <p class="eyebrow">Les objets pour jouer</p>
+      <h2>La ligne</h2>
+      <div class="row">
+        <div class="col-text">
+          <p>Une ligne est un <b>ensemble de points</b> :</p>
+          <p class="soft">infinie, continue, et sans épaisseur.</p>
+          <p class="soft" style="margin-top:6px">On la note par une lettre minuscule entre parenthèses.</p>
+          <span class="notation-tag">(d)</span>
+        </div>
+        <div class="col-art">
+          <figure>
+            <div class="frame" style="width:190px; height:220px">
+              <svg width="150" height="180" viewBox="0 0 150 180">
+                <line x1="20" y1="150" x2="130" y2="30" stroke="#2B2118" stroke-width="1.6"/>
+                <text x="100" y="34" font-family="Space Mono, monospace" font-size="15" fill="#2B2118">(d)</text>
+              </svg>
+            </div>
+            <figcaption>une droite</figcaption>
+          </figure>
+          <figure>
+            <div class="frame" style="width:190px; height:220px">
+              <svg width="150" height="180" viewBox="0 0 150 180">
+                <circle cx="75" cy="95" r="52" fill="none" stroke="#2B2118" stroke-width="1.6"/>
+                <text x="118" y="55" font-family="Space Mono, monospace" font-size="15" fill="#2B2118">(c)</text>
+              </svg>
+            </div>
+            <figcaption>un cercle</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. LES REGLES -->
+    <section class="slide dark" id="s-regles">
+      <p class="eyebrow">Dernier ingrédient</p>
+      <h2>Comme pour tout jeu, il y a des règles</h2>
+      <div class="rule-cards">
+        <div class="rule-card">
+          <h3>Des conventions d'écriture</h3>
+          <p>comment on nomme et on note les objets</p>
+        </div>
+        <div class="rule-card">
+          <h3>Des propriétés</h3>
+          <p>ce qu'on a le droit d'affirmer, et pourquoi</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. PROPRIETE / ACTION -->
+    <section class="slide" id="s-prop">
+      <p class="eyebrow">Une règle en action</p>
+      <h2 style="font-size:32px">Propriété</h2>
+      <div class="prop-block">
+        <p>Si deux droites sont perpendiculaires à une même droite, alors elles sont parallèles entre elles.</p>
+      </div>
+      <span class="action-tag">Action</span>
+      <div class="row" style="flex:none">
+        <div class="col-text" style="flex:0 0 46%">
+          <div class="action-card">
+            <p class="soft" style="font-size:17px">on a : (d₁) ⊥ (d₃) et (d₂) ⊥ (d₃)</p>
+            <p style="font-size:17px"><b>donc :</b> (d₁) ∕∕ (d₂)</p>
+          </div>
+        </div>
+        <div class="col-art">
+          <svg width="220" height="160" viewBox="0 0 220 160">
+            <line x1="20" y1="140" x2="150" y2="30" stroke="#2B2118" stroke-width="2.4"/>
+            <line x1="55" y1="140" x2="185" y2="30" stroke="#2B2118" stroke-width="2.4"/>
+            <line x1="15" y1="15" x2="140" y2="150" stroke="#B23A2C" stroke-width="2.4"/>
+            <text x="4" y="130" font-family="Space Mono, monospace" font-size="14" fill="#2B2118">(d₁)</text>
+            <text x="38" y="130" font-family="Space Mono, monospace" font-size="14" fill="#2B2118">(d₂)</text>
+            <text x="100" y="150" font-family="Space Mono, monospace" font-size="14" fill="#B23A2C">(d₃)</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. TRANSITION -->
+    <section class="slide" id="s-end">
+      <p class="eyebrow">À vous de jouer</p>
+      <p class="lead">Le plateau est prêt, les objets sont sur le plateau&hellip;</p>
+      <h2>Découvrons toutes les règles du jeu !</h2>
+    </section>
+
+   </div>
+
+   <p class="count" id="count">1 / 8</p>
+
+  </div>
+
+  <div class="nav">
+    <button id="prev" aria-label="Diapositive précédente">←</button>
+    <div class="pips" id="pips"></div>
+    <button id="next" aria-label="Diapositive suivante">→</button>
+  </div>
+</div>
+
+<script>
+  // Le contenu est dessiné pour un canevas fixe de 1280x768 ; on le met à
+  // l'échelle pour qu'il tienne toujours exactement dans .deck, quelle que
+  // soit la taille de la fenêtre — plus rien ne peut déborder du cadre.
+  const deck = document.getElementById('deck');
+  const deckInner = document.getElementById('deckInner');
+  function fitDeck(){
+    const scale = deck.clientWidth / 1280;
+    deckInner.style.transform = 'scale(' + scale + ')';
+  }
+  window.addEventListener('resize', fitDeck);
+  fitDeck();
+
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const pipsEl = document.getElementById('pips');
+  const countEl = document.getElementById('count');
+  let i = 0;
+
+  slides.forEach((_, idx) => {
+    const b = document.createElement('button');
+    b.className = 'pip' + (idx === 0 ? ' active' : '');
+    b.setAttribute('aria-label', 'Aller à la diapositive ' + (idx + 1));
+    b.addEventListener('click', () => go(idx));
+    pipsEl.appendChild(b);
+  });
+  const pips = Array.from(pipsEl.children);
+
+  function go(n){
+    i = (n + slides.length) % slides.length;
+    slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
+    pips.forEach((p, idx) => p.classList.toggle('active', idx === i));
+    countEl.textContent = (i + 1) + ' / ' + slides.length;
+  }
+
+  document.getElementById('prev').addEventListener('click', () => go(i - 1));
+  document.getElementById('next').addEventListener('click', () => go(i + 1));
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') go(i + 1);
+    if (e.key === 'ArrowLeft') go(i - 1);
+  });
+</script>
+</body>
+</html>
