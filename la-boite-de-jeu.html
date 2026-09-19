@@ -194,10 +194,6 @@
   }
   .nav button:hover{background:var(--wood-2); transform:translateY(-1px)}
   .nav button:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
-  .pips{display:flex; gap:9px}
-  .pip{width:9px; height:9px; border-radius:50%; background:rgba(230,215,180,0.35); border:none; padding:0; cursor:pointer}
-  .pip.active{background:var(--gold)}
-  .pip:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
 
   .count{
     position:absolute; top:20px; right:26px;
@@ -462,6 +458,396 @@
       <h2>Découvrons toutes les règles du jeu !</h2>
     </section>
 
+    <!-- 9. I) LE POINT - definition -->
+    <section class="slide" id="c-point-def">
+      <p class="eyebrow">I) Le point</p>
+      <h2>Un point, une intersection</h2>
+      <div class="row" style="align-items:center">
+        <div class="col-text" style="flex:0 0 46%">
+          <p>Un point est repéré à l'<b>intersection</b> de deux lignes.</p>
+        </div>
+        <div class="col-art" style="flex:1">
+          <div class="frame" style="width:380px; height:280px">
+            <svg width="340" height="240" viewBox="0 0 340 240">
+              <line x1="30" y1="30" x2="310" y2="210" stroke="#3B5B8C" stroke-width="2.6"/>
+              <line x1="310" y1="30" x2="30" y2="210" stroke="#B23A2C" stroke-width="2.6"/>
+              <line x1="163" y1="113" x2="177" y2="127" stroke="#2B2118" stroke-width="2.8" stroke-linecap="round"/>
+              <line x1="163" y1="127" x2="177" y2="113" stroke="#2B2118" stroke-width="2.8" stroke-linecap="round"/>
+              <text x="182" y="112" font-family="Fraunces, serif" font-size="22" fill="#2B2118">A</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10. I) LE POINT - notation -->
+    <section class="slide" id="c-point-notation">
+      <p class="eyebrow">I) Le point</p>
+      <h2>Appartenance et notation</h2>
+      <div class="row" style="align-items:center">
+        <div class="col-text" style="flex:0 0 42%">
+          <p>Ici, <b>(c)</b> est un cercle et <b>(d)</b> est une droite : elles se coupent en A et B.</p>
+          <p class="soft">On note : A&#8712;(c) et A&#8712;(d) &nbsp;&nbsp; B&#8712;(c) et B&#8712;(d).</p>
+          <p class="soft">C appartient au cercle mais pas à la droite : C&#8712;(c) et C&#8713;(d).</p>
+        </div>
+        <div class="col-art" style="flex:1">
+          <div class="frame" style="width:420px; height:300px">
+            <svg width="380" height="270" viewBox="0 0 380 270">
+              <circle cx="190" cy="150" r="95" fill="none" stroke="#3B5B8C" stroke-width="2.6"/>
+              <line x1="0" y1="169" x2="380" y2="55" stroke="#B23A2C" stroke-width="2.6"/>
+              <text x="86" y="60" font-family="Space Mono, monospace" font-size="16" fill="#3B5B8C">(c)</text>
+              <text x="340" y="55" font-family="Space Mono, monospace" font-size="16" fill="#B23A2C">(d)</text>
+              <line x1="88" y1="133" x2="102" y2="147" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="88" y1="147" x2="102" y2="133" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="70" y="128" font-family="Fraunces, serif" font-size="18" fill="#2B2118">A</text>
+              <line x1="256" y1="82" x2="270" y2="96" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="256" y1="96" x2="270" y2="82" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="273" y="80" font-family="Fraunces, serif" font-size="18" fill="#2B2118">B</text>
+              <line x1="230" y1="225" x2="244" y2="239" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="230" y1="239" x2="244" y2="225" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="247" y="242" font-family="Fraunces, serif" font-size="18" fill="#2B2118">C</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11. II) La droite (AB) -->
+    <section class="slide" id="c-droite">
+      <p class="eyebrow">II) À partir de deux points A et B</p>
+      <h2>La droite (AB)</h2>
+      <div class="row" style="align-items:center">
+        <div class="col-text" style="flex:0 0 40%">
+          <p>La droite <b>passant par</b> les points A et B.</p>
+          <span class="notation-tag">(AB)</span>
+        </div>
+        <div class="col-art" style="flex:1; justify-content:center">
+          <div class="frame" style="width:460px; height:320px">
+            <svg width="440" height="300" viewBox="0 0 500 300">
+              <line x1="30" y1="36.9" x2="470" y2="268.4" stroke="#B23A2C" stroke-width="2.6"/>
+              <line x1="143" y1="93" x2="157" y2="107" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="143" y1="107" x2="157" y2="93" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="160" y="95" font-family="Fraunces, serif" font-size="20" fill="#2B2118">A</text>
+              <line x1="335" y1="194" x2="349" y2="208" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="335" y1="208" x2="349" y2="194" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="352" y="196" font-family="Fraunces, serif" font-size="20" fill="#2B2118">B</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12. II) Le segment [AB] -->
+    <section class="slide" id="c-segment">
+      <p class="eyebrow">II) À partir de deux points A et B</p>
+      <h2>Le segment [AB]</h2>
+      <div class="row" style="align-items:center">
+        <div class="col-text" style="flex:0 0 40%">
+          <p>Le segment d'<b>extrémités</b> A et B.</p>
+          <span class="notation-tag">[AB]</span>
+        </div>
+        <div class="col-art" style="flex:1; justify-content:center">
+          <div class="frame" style="width:460px; height:320px">
+            <svg width="440" height="300" viewBox="0 0 500 300">
+              <line x1="150" y1="100" x2="342" y2="201" stroke="#B23A2C" stroke-width="2.6"/>
+              <line x1="143" y1="93" x2="157" y2="107" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="143" y1="107" x2="157" y2="93" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="160" y="95" font-family="Fraunces, serif" font-size="20" fill="#2B2118">A</text>
+              <line x1="335" y1="194" x2="349" y2="208" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="335" y1="208" x2="349" y2="194" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="352" y="196" font-family="Fraunces, serif" font-size="20" fill="#2B2118">B</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13. II) La demi-droite [AB) -->
+    <section class="slide" id="c-demidroite-ab">
+      <p class="eyebrow">II) À partir de deux points A et B</p>
+      <h2>La demi-droite [AB)</h2>
+      <div class="row" style="align-items:center">
+        <div class="col-text" style="flex:0 0 40%">
+          <p>La demi-droite d'<b>origine</b> A <b>passant par</b> B.</p>
+          <span class="notation-tag">[AB)</span>
+        </div>
+        <div class="col-art" style="flex:1; justify-content:center">
+          <div class="frame" style="width:460px; height:320px">
+            <svg width="440" height="300" viewBox="0 0 500 300">
+              <line x1="150" y1="100" x2="470" y2="268.4" stroke="#B23A2C" stroke-width="2.6"/>
+              <line x1="143" y1="93" x2="157" y2="107" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="143" y1="107" x2="157" y2="93" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="160" y="95" font-family="Fraunces, serif" font-size="20" fill="#2B2118">A</text>
+              <line x1="335" y1="194" x2="349" y2="208" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="335" y1="208" x2="349" y2="194" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="352" y="196" font-family="Fraunces, serif" font-size="20" fill="#2B2118">B</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 14. II) La longueur AB -->
+    <section class="slide" id="c-longueur">
+      <p class="eyebrow">II) À partir de deux points A et B</p>
+      <h2>La longueur AB</h2>
+      <div class="row" style="align-items:center">
+        <div class="col-text" style="flex:0 0 40%">
+          <p>La <b>longueur</b> du segment [AB].</p>
+          <span class="notation-tag">AB</span>
+        </div>
+        <div class="col-art" style="flex:1; justify-content:center">
+          <div class="frame" style="width:460px; height:320px">
+            <svg width="440" height="300" viewBox="0 0 500 300">
+              <line x1="158" y1="108" x2="334" y2="193" stroke="#B23A2C" stroke-width="2.2" stroke-dasharray="7 6"/>
+              <polygon points="150,100 164,106 158,116" fill="#B23A2C"/>
+              <polygon points="342,201 328,195 334,185" fill="#B23A2C"/>
+              <line x1="143" y1="93" x2="157" y2="107" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="143" y1="107" x2="157" y2="93" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="160" y="95" font-family="Fraunces, serif" font-size="20" fill="#2B2118">A</text>
+              <line x1="335" y1="194" x2="349" y2="208" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="335" y1="208" x2="349" y2="194" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="352" y="196" font-family="Fraunces, serif" font-size="20" fill="#2B2118">B</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 15. II) La demi-droite [BA) -->
+    <section class="slide" id="c-demidroite-ba">
+      <p class="eyebrow">II) À partir de deux points A et B</p>
+      <h2>La demi-droite [BA)</h2>
+      <div class="row" style="align-items:center">
+        <div class="col-text" style="flex:0 0 40%">
+          <p>La demi-droite d'<b>origine</b> B <b>passant par</b> A.</p>
+          <span class="notation-tag">[BA)</span>
+        </div>
+        <div class="col-art" style="flex:1; justify-content:center">
+          <div class="frame" style="width:460px; height:320px">
+            <svg width="440" height="300" viewBox="0 0 500 300">
+              <line x1="342" y1="201" x2="30" y2="36.9" stroke="#B23A2C" stroke-width="2.6"/>
+              <line x1="143" y1="93" x2="157" y2="107" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="143" y1="107" x2="157" y2="93" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="160" y="95" font-family="Fraunces, serif" font-size="20" fill="#2B2118">A</text>
+              <line x1="335" y1="194" x2="349" y2="208" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="335" y1="208" x2="349" y2="194" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="352" y="196" font-family="Fraunces, serif" font-size="20" fill="#2B2118">B</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 16. II) Le milieu de [AB] -->
+    <section class="slide" id="c-milieu">
+      <p class="eyebrow">II) À partir de deux points A et B</p>
+      <h2>Le milieu de [AB]</h2>
+      <div class="row" style="align-items:center">
+        <div class="col-text" style="flex:0 0 40%">
+          <p>L'unique point de [AB] situé à <b>égale distance</b> de A et de B.</p>
+          <span class="notation-tag">Mil[AB]</span>
+        </div>
+        <div class="col-art" style="flex:1; justify-content:center">
+          <div class="frame" style="width:460px; height:320px">
+            <svg width="440" height="300" viewBox="0 0 500 300">
+              <line x1="150" y1="100" x2="342" y2="201" stroke="#8B2E7A" stroke-width="2.2"/>
+              <line x1="193" y1="118" x2="203" y2="132" stroke="#8B2E7A" stroke-width="2.2"/>
+              <line x1="290" y1="169" x2="300" y2="183" stroke="#8B2E7A" stroke-width="2.2"/>
+              <line x1="238" y1="140" x2="254" y2="161" stroke="#B23A2C" stroke-width="3.2" stroke-linecap="round"/>
+              <line x1="254" y1="140" x2="238" y2="161" stroke="#B23A2C" stroke-width="3.2" stroke-linecap="round"/>
+              <text x="256" y="166" font-family="Fraunces, serif" font-size="18" fill="#B23A2C">M</text>
+              <line x1="143" y1="93" x2="157" y2="107" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="143" y1="107" x2="157" y2="93" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="160" y="95" font-family="Fraunces, serif" font-size="20" fill="#2B2118">A</text>
+              <line x1="335" y1="194" x2="349" y2="208" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="335" y1="208" x2="349" y2="194" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="352" y="196" font-family="Fraunces, serif" font-size="20" fill="#2B2118">B</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 17. II) Cerc(A,B) -->
+    <section class="slide" id="c-cercle-ab">
+      <p class="eyebrow">II) À partir de deux points A et B</p>
+      <h2>Le cercle Cerc(A,B)</h2>
+      <div class="row" style="align-items:center">
+        <div class="col-text" style="flex:0 0 40%">
+          <p>Le cercle de <b>centre</b> A <b>passant par</b> B.</p>
+          <span class="notation-tag">Cerc(A,B)</span>
+        </div>
+        <div class="col-art" style="flex:1; justify-content:center">
+          <div class="frame" style="width:460px; height:320px">
+            <svg width="440" height="300" viewBox="0 0 500 300">
+              <circle cx="190" cy="150" r="120" fill="none" stroke="#B23A2C" stroke-width="2.6"/>
+              <line x1="183" y1="143" x2="197" y2="157" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="183" y1="157" x2="197" y2="143" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="178" y="130" font-family="Fraunces, serif" font-size="20" fill="#2B2118">A</text>
+              <line x1="303" y1="143" x2="317" y2="157" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="303" y1="157" x2="317" y2="143" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="320" y="140" font-family="Fraunces, serif" font-size="20" fill="#2B2118">B</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 18. II) Cerc(B,A) -->
+    <section class="slide" id="c-cercle-ba">
+      <p class="eyebrow">II) À partir de deux points A et B</p>
+      <h2>Le cercle Cerc(B,A)</h2>
+      <div class="row" style="align-items:center">
+        <div class="col-text" style="flex:0 0 40%">
+          <p>Le cercle de <b>centre</b> B <b>passant par</b> A.</p>
+          <span class="notation-tag">Cerc(B,A)</span>
+        </div>
+        <div class="col-art" style="flex:1; justify-content:center">
+          <div class="frame" style="width:460px; height:320px">
+            <svg width="440" height="300" viewBox="0 0 500 300">
+              <circle cx="310" cy="150" r="120" fill="none" stroke="#B23A2C" stroke-width="2.6"/>
+              <line x1="183" y1="143" x2="197" y2="157" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="183" y1="157" x2="197" y2="143" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="170" y="140" font-family="Fraunces, serif" font-size="20" fill="#2B2118">A</text>
+              <line x1="303" y1="143" x2="317" y2="157" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <line x1="303" y1="157" x2="317" y2="143" stroke="#2B2118" stroke-width="2.6" stroke-linecap="round"/>
+              <text x="320" y="130" font-family="Fraunces, serif" font-size="20" fill="#2B2118">B</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 19. III) Positions relatives de deux droites -->
+    <section class="slide" id="c-positions">
+      <p class="eyebrow">III) Deux droites</p>
+      <h2>Positions relatives de deux droites</h2>
+      <div class="row" style="justify-content:center; gap:26px; margin-top:44px">
+        <figure>
+          <div class="frame" style="width:190px; height:170px">
+            <svg width="150" height="120" viewBox="0 0 140 110">
+              <line x1="15" y1="15" x2="115" y2="85" stroke="#2B2118" stroke-width="2.2"/>
+              <line x1="115" y1="15" x2="15" y2="85" stroke="#B23A2C" stroke-width="2.2"/>
+            </svg>
+          </div>
+          <figcaption>sécantes</figcaption>
+        </figure>
+        <figure>
+          <div class="frame" style="width:190px; height:170px">
+            <svg width="150" height="120" viewBox="0 0 140 110">
+              <line x1="15" y1="55" x2="115" y2="55" stroke="#2B2118" stroke-width="2.2"/>
+              <line x1="65" y1="10" x2="65" y2="100" stroke="#B23A2C" stroke-width="2.2"/>
+              <path d="M65,44 h11 v11" fill="none" stroke="#2B2118" stroke-width="1.6"/>
+            </svg>
+          </div>
+          <figcaption>perpendiculaires</figcaption>
+        </figure>
+        <figure>
+          <div class="frame" style="width:190px; height:170px">
+            <svg width="150" height="120" viewBox="0 0 140 110">
+              <line x1="15" y1="25" x2="115" y2="75" stroke="#2B2118" stroke-width="2.2"/>
+              <line x1="15" y1="50" x2="115" y2="100" stroke="#B23A2C" stroke-width="2.2"/>
+            </svg>
+          </div>
+          <figcaption>parallèles</figcaption>
+        </figure>
+        <figure>
+          <div class="frame" style="width:190px; height:170px">
+            <svg width="150" height="120" viewBox="0 0 140 110">
+              <line x1="15" y1="48" x2="115" y2="48" stroke="#2B2118" stroke-width="2.2"/>
+              <line x1="15" y1="52" x2="115" y2="52" stroke="#B23A2C" stroke-width="2.2" stroke-dasharray="6 4"/>
+            </svg>
+          </div>
+          <figcaption>confondues</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- 20. IV) Propriété 1 -->
+    <section class="slide" id="c-prop1">
+      <p class="eyebrow">IV) Droites parallèles et perpendiculaires</p>
+      <h2 style="font-size:32px">Propriété 1</h2>
+      <div class="prop-block">
+        <p>Si deux droites sont perpendiculaires à une même droite, alors elles sont parallèles entre elles.</p>
+      </div>
+      <span class="action-tag">Action</span>
+      <div class="row" style="flex:none">
+        <div class="col-text" style="flex:0 0 46%">
+          <div class="action-card">
+            <p class="soft" style="font-size:17px">on a : (d₁) ⊥ (d₃) et (d₂) ⊥ (d₃)</p>
+            <p style="font-size:17px"><b>donc :</b> (d₁) ∕∕ (d₂)</p>
+          </div>
+        </div>
+        <div class="col-art">
+          <svg width="220" height="160" viewBox="0 0 220 160">
+            <line x1="20" y1="140" x2="150" y2="30" stroke="#2B2118" stroke-width="2.4"/>
+            <line x1="55" y1="140" x2="185" y2="30" stroke="#2B2118" stroke-width="2.4"/>
+            <line x1="15" y1="15" x2="140" y2="150" stroke="#B23A2C" stroke-width="2.4"/>
+            <text x="4" y="130" font-family="Space Mono, monospace" font-size="14" fill="#2B2118">(d₁)</text>
+            <text x="38" y="130" font-family="Space Mono, monospace" font-size="14" fill="#2B2118">(d₂)</text>
+            <text x="100" y="150" font-family="Space Mono, monospace" font-size="14" fill="#B23A2C">(d₃)</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- 21. IV) Propriété 2 -->
+    <section class="slide" id="c-prop2">
+      <p class="eyebrow">IV) Droites parallèles et perpendiculaires</p>
+      <h2 style="font-size:32px">Propriété 2</h2>
+      <div class="prop-block">
+        <p>Si deux droites sont parallèles entre elles et si une troisième est perpendiculaire à l'une, alors elle est aussi perpendiculaire à l'autre.</p>
+      </div>
+      <span class="action-tag">Action</span>
+      <div class="row" style="flex:none">
+        <div class="col-text" style="flex:0 0 46%">
+          <div class="action-card">
+            <p class="soft" style="font-size:17px">on a : (d₁) ∕∕ (d₂) et (d₃) ⊥ (d₁)</p>
+            <p style="font-size:17px"><b>donc :</b> (d₃) ⊥ (d₂)</p>
+          </div>
+        </div>
+        <div class="col-art">
+          <svg width="220" height="160" viewBox="0 0 220 160">
+            <line x1="20" y1="140" x2="150" y2="30" stroke="#2B2118" stroke-width="2.4"/>
+            <line x1="55" y1="140" x2="185" y2="30" stroke="#2B2118" stroke-width="2.4"/>
+            <line x1="15" y1="15" x2="140" y2="150" stroke="#B23A2C" stroke-width="2.4"/>
+            <text x="4" y="130" font-family="Space Mono, monospace" font-size="14" fill="#2B2118">(d₁)</text>
+            <text x="38" y="130" font-family="Space Mono, monospace" font-size="14" fill="#2B2118">(d₂)</text>
+            <text x="100" y="150" font-family="Space Mono, monospace" font-size="14" fill="#B23A2C">(d₃)</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <!-- 22. IV) Propriété 3 -->
+    <section class="slide" id="c-prop3">
+      <p class="eyebrow">IV) Droites parallèles et perpendiculaires</p>
+      <h2 style="font-size:32px">Propriété 3</h2>
+      <div class="prop-block">
+        <p>Si deux droites sont parallèles à une même droite, alors elles sont parallèles entre elles.</p>
+      </div>
+      <span class="action-tag">Action</span>
+      <div class="row" style="flex:none">
+        <div class="col-text" style="flex:0 0 46%">
+          <div class="action-card">
+            <p class="soft" style="font-size:17px">on a : (d₂) ∕∕ (d₁) et (d₃) ∕∕ (d₁)</p>
+            <p style="font-size:17px"><b>donc :</b> (d₂) ∕∕ (d₃)</p>
+          </div>
+        </div>
+        <div class="col-art">
+          <svg width="220" height="160" viewBox="0 0 220 160">
+            <line x1="20" y1="20" x2="200" y2="70" stroke="#2B2118" stroke-width="2.4"/>
+            <line x1="20" y1="55" x2="200" y2="105" stroke="#2B2118" stroke-width="2.4"/>
+            <line x1="20" y1="90" x2="200" y2="140" stroke="#2B2118" stroke-width="2.4"/>
+            <text x="0" y="16" font-family="Space Mono, monospace" font-size="14" fill="#2B2118">(d₃)</text>
+            <text x="0" y="51" font-family="Space Mono, monospace" font-size="14" fill="#2B2118">(d₁)</text>
+            <text x="0" y="86" font-family="Space Mono, monospace" font-size="14" fill="#2B2118">(d₂)</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+
    </div>
 
    <p class="count" id="count">1 / 8</p>
@@ -470,7 +856,6 @@
 
   <div class="nav">
     <button id="prev" aria-label="Diapositive précédente">←</button>
-    <div class="pips" id="pips"></div>
     <button id="next" aria-label="Diapositive suivante">→</button>
   </div>
 </div>
@@ -489,23 +874,12 @@
   fitDeck();
 
   const slides = Array.from(document.querySelectorAll('.slide'));
-  const pipsEl = document.getElementById('pips');
   const countEl = document.getElementById('count');
   let i = 0;
-
-  slides.forEach((_, idx) => {
-    const b = document.createElement('button');
-    b.className = 'pip' + (idx === 0 ? ' active' : '');
-    b.setAttribute('aria-label', 'Aller à la diapositive ' + (idx + 1));
-    b.addEventListener('click', () => go(idx));
-    pipsEl.appendChild(b);
-  });
-  const pips = Array.from(pipsEl.children);
 
   function go(n){
     i = (n + slides.length) % slides.length;
     slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
-    pips.forEach((p, idx) => p.classList.toggle('active', idx === i));
     countEl.textContent = (i + 1) + ' / ' + slides.length;
   }
 
