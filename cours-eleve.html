@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bases de la géométrie</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap">
+<style>
+  :root{
+    --encre:#1d1d1d;
+    --titre:#9b1c1c;
+    --vocab:#1f6b2a;
+    --rouge:#e01b1b;
+    --bleu:#1a3fd6;
+    --vert-donnee:#2f9e44;
+    --magenta:#d1199b;
+    --bord:#333;
+    --fond:#fff;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--fond);color:var(--encre);
+       font-family:'STIX Two Text', 'Times New Roman', serif;font-size:19px;line-height:1.45}
+  main{max-width:1020px;margin:0 auto;padding:16px 16px 80px}
+
+  /* ---------- barre d'outils ---------- */
+  .outils{position:sticky;top:0;z-index:10;display:flex;justify-content:flex-end;align-items:center;gap:8px;
+          padding:8px 16px;background:rgba(255,255,255,.94);border-bottom:1px solid #e3e3e3;
+          font-family:system-ui, sans-serif;font-size:14px}
+  .outils .compteur{margin-right:auto;color:#666;white-space:nowrap}
+  .outils button{white-space:nowrap;font:inherit;padding:6px 12px;border-radius:8px;border:1px solid #c9c9c9;background:#fff;cursor:pointer}
+  .outils button:hover{background:#f3f3f3}
+  .outils button.principal{background:var(--titre);border-color:var(--titre);color:#fff}
+  .outils button.principal:hover{background:#7c1515}
+  .outils button:disabled{opacity:.4;cursor:default}
+
+  /* ---------- titres ---------- */
+  .chapitre{border:1.5px solid var(--titre);background:#fcd6d6;border-radius:12px;text-align:center;
+            font-weight:700;font-size:1.35em;padding:10px;margin:12px 0 18px}
+  h2{color:var(--titre);font-size:1.3em;margin:30px 0 12px;display:table;
+     border-bottom:1.5px solid var(--titre);padding-bottom:1px}
+  h2 .fin{font-weight:400}
+  /* titres de parties cliquables : la partie active reçoit les « Suivant » */
+  h2{scroll-margin-top:60px;cursor:pointer;opacity:.45;transition:opacity .3s, background-color .3s;border-radius:6px 6px 0 0;padding:2px 8px 1px;margin-left:-8px}
+  h2:hover{opacity:.75}
+  h2.actif{opacity:1;background:#fcd6d6}
+  h2.actif::before{content:"▶ ";font-size:.75em;vertical-align:.1em}
+  /* espace d'une partie : replié tant que son titre n'a pas été cliqué */
+  .zone{display:none}
+  .zone.ouverte{display:block}
+  .question{margin:14px 0 8px}
+
+  .vocab{color:var(--vocab);font-weight:700}
+  b{font-weight:700}
+  i{font-style:italic}
+  .par{letter-spacing:-.12em;margin-right:.12em}
+
+  /* ---------- blocs à révéler : seuls les titres sont visibles au départ ---------- */
+  .bloc{position:relative;transition:opacity .45s}
+  .bloc.absent{opacity:0;pointer-events:none}
+  .bloc.cache{cursor:pointer}
+  .bloc::after{content:"?";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+               background:#f3f4f7;color:#a3abbb;font:600 22px system-ui,sans-serif;border-radius:4px;
+               opacity:0;pointer-events:none;transition:opacity .35s}
+  .bloc.cache::after{opacity:1}
+  .bloc.cache:hover::after{background:#e8ebf1}
+
+  /* Chaque cellule porte ses 4 bordures (chevauchées de 1px) : une cellule cachée
+     n'est donc pas dessinée du tout, le tableau se construit au fil des révélations. */
+  .cadre, .grille, .positions{display:grid;padding:0 1px 1px 0}
+  .cadre > div, .grille > div, .positions > div{border:1px solid var(--bord);margin:0 -1px -1px 0}
+
+  /* ---------- I ---------- */
+  .cadre{grid-template-columns:1fr 260px}
+  .cadre > div{padding:10px 12px}
+  .cadre > div + div{display:flex;align-items:center;justify-content:center}
+  .cadre p{margin:0 0 10px}
+  .cadre p:last-child{margin:0}
+
+  /* ---------- II / III : grilles texte + figure ---------- */
+  .grille{grid-template-columns:1.25fr 1fr 1.25fr 1fr}
+  .grille > div{padding:8px 10px;
+                display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:140px}
+  .grille .note{margin-top:10px}
+  svg.cad{width:100%;max-width:200px;display:block}
+
+  .positions{grid-template-columns:repeat(4,1fr)}
+  .positions > div{padding:8px;display:flex;align-items:center;justify-content:center;text-align:center}
+  .positions .entete{grid-column:span 2;font-weight:700;padding:10px}
+  .positions .notation{min-height:62px}
+
+  /* ---------- IV : propriétés ---------- */
+  .propriete{border:1.3px solid #a32020;border-radius:10px;padding:10px 14px;margin:12px 0}
+  .propriete .etiquette{color:#a32020;font-weight:700;margin-bottom:6px}
+  .propriete .schema{display:grid;grid-template-columns:1fr 220px 1fr;gap:16px;align-items:center}
+  .propriete p{margin:0 0 10px}
+  .propriete p:last-child{margin:0}
+  .propriete svg{width:100%;max-width:220px;display:block;margin:0 auto}
+  .propriete{transition:border-color .45s}
+  .propriete.vide{border-color:transparent}
+  .propriete .etiquette{transition:opacity .45s}
+  .propriete.vide .etiquette{opacity:0}
+
+  @media (max-width:760px){
+    body{font-size:17px}
+    .cadre{grid-template-columns:1fr}
+    .grille{grid-template-columns:1.2fr 1fr}
+    .positions{grid-template-columns:repeat(2,1fr)}
+    .positions .entete{grid-column:span 2}
+    .positions .p-sec-fig{order:1}.positions .p-sec-not{order:2}
+    .positions .p-par-ent{order:3}.positions .p-par-fig{order:4}.positions .p-par-not{order:5}
+    .propriete .schema{grid-template-columns:1fr}
+    .outils .aide{display:none}
+  }
+  @media print{
+    .outils{display:none}
+    .bloc.absent{opacity:1}
+    .bloc::after{display:none}
+    h2{opacity:1;background:none}
+    h2.actif::before{content:none}
+    .zone{display:block}
+    .propriete.vide{border-color:#a32020}
+    .propriete.vide .etiquette{opacity:1}
+  }
+</style>
+</head>
+<body>
+
+<div class="outils">
+  <span class="compteur" id="compteur"></span>
+  <span class="aide" style="color:#888">titre : ouvrir · → : suivant · clic sur ? : révéler · ← : annuler</span>
+  <button id="btnMasquer">Masquer la partie</button>
+  <button id="btnReveler">Révéler la partie</button>
+  <button id="btnSuivant" class="principal">Suivant →</button>
+</div>
+
+<main>
+
+<div class="chapitre">Bases de la géométrie</div>
+
+<!-- ======================= I ======================= -->
+<h2>I) Le point <span class="fin">: appartenance, intersection et notations</span></h2>
+
+<div class="cadre">
+  <div>
+    <p>Ici, on a deux lignes : un cercle nommé <b><i>(c)</i></b> et une droite nommée <b><i>(d)</i></b>.</p>
+    <p>Un <span class="vocab">point</span> est repéré à l’<b>intersection</b> de deux lignes.</p>
+    <p>Les points <b><i>A</i></b> et <b><i>B</i></b> sont les deux <span class="vocab">points d’intersection</span> entre <b><i>(c)</i></b> et <b><i>(d)</i></b>.<br>
+       On note : <b><i>A</i> ∈ <i>(c)</i> et <i>A</i> ∈ <i>(d)</i></b>
+       &nbsp;&nbsp;&nbsp; <b><i>B</i> ∈ <i>(c)</i> et <i>B</i> ∈ <i>(d)</i></b>.</p>
+    <p>Le point <b><i>C</i></b> appartient au cercle <b><i>(c)</i></b> mais n’appartient pas à la droite <b><i>(d)</i></b> :<br>
+       On note <b><i>C</i> ∈ <i>(c)</i> et <i>C</i> ∉ <i>(d)</i></b>.</p>
+  </div>
+  <div>
+    <svg viewBox="-4 -2.6 8 5.2" style="width:100%;max-width:240px">
+      <circle cx="0" cy="0" r="2" fill="none" stroke="var(--bleu)" stroke-width=".05"/>
+      <text x="-1.75" y="-1.6" font-size=".42" fill="var(--bleu)" font-style="italic">(c)</text>
+      <line x1="-4" y1="0.4" x2="4" y2="-2.0" stroke="var(--rouge)" stroke-width=".05"/>
+      <text x="3.15" y="-1.85" font-size=".42" fill="var(--rouge)" font-style="italic">(d)</text>
+      <circle cx="-1.99" cy="-0.20" r=".09"/><text x="-2.45" y="0.35" font-size=".45" font-style="italic">A</text>
+      <circle cx="1.55" cy="-1.27" r=".09"/><text x="1.62" y="-1.45" font-size=".45" font-style="italic">B</text>
+      <circle cx="1" cy="1.73" r=".09"/><text x="1.12" y="2.25" font-size=".45" font-style="italic">C</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ======================= II ======================= -->
+<h2>II) Vue d’ensemble autour de deux points</h2>
+<p class="question">Que peut-on définir à partir de deux points A et B du plan ?</p>
+
+<div class="grille">
+  <div><div>la <span class="vocab">droite</span> <b>passant par</b> les points A et B.</div>
+       <div class="note">On la note <b>(AB)</b></div></div>
+  <div class="fig" data-fig="droite"></div>
+  <div><div>le <span class="vocab">segment</span> d’<span class="vocab">extrémités</span> A et B.</div>
+       <div class="note">On le note <b>[AB]</b>.</div></div>
+  <div class="fig" data-fig="segment"></div>
+
+  <div><div>la <span class="vocab">demi-droite</span> d’<span class="vocab">origine</span> A <b>passant par</b> B.</div>
+       <div class="note">On la note <b>[AB)</b></div></div>
+  <div class="fig" data-fig="demiAB"></div>
+  <div><div>la <span class="vocab">longueur</span> de [AB].</div>
+       <div class="note">On la note <b>AB</b></div></div>
+  <div class="fig" data-fig="longueur"></div>
+
+  <div><div>la <span class="vocab">demi-droite</span> d’<span class="vocab">origine</span> B <b>passant par</b> A.</div>
+       <div class="note">On la note <b>[BA)</b></div></div>
+  <div class="fig" data-fig="demiBA"></div>
+  <div><div>le <span class="vocab">milieu</span> du segment [AB].</div>
+       <div class="note">L’unique point de [AB] situé à <span>égale distance des extrémités</span></div></div>
+  <div class="fig" data-fig="milieu"></div>
+
+  <div><div>le <span class="vocab">cercle</span> de <b>centre</b> A <b>passant par</b> B.</div>
+       <div class="note">On le note <span><i>𝒞</i><sub><i>A</i>,<i>B</i></sub></span></div></div>
+  <div class="fig" data-fig="cercleA"></div>
+  <div><div>le <span class="vocab">cercle</span> de <b>centre</b> B <b>passant par</b> A.</div>
+       <div class="note">On le note <span><i>𝒞</i><sub><i>B</i>,<i>A</i></sub></span></div></div>
+  <div class="fig" data-fig="cercleB"></div>
+</div>
+
+<!-- ======================= III ======================= -->
+<h2>III) Positions relatives de deux droites</h2>
+
+<div class="positions">
+  <div class="entete"><span>Sécantes</span></div>
+  <div class="entete p-par-ent"><span>Parallèles</span></div>
+  <div class="fig p-sec-fig" data-fig="secantes"></div>
+  <div class="fig p-sec-fig" data-fig="perp"></div>
+  <div class="fig p-par-fig" data-fig="paralleles"></div>
+  <div class="fig p-par-fig" data-fig="confondues"></div>
+  <div class="notation p-sec-not"><span><i>(d)</i> et <i>(d′)</i><br>sont <span class="vocab">sécantes</span> en <i>S</i></span></div>
+  <div class="notation p-sec-not"><b><i>(d′)</i> ⊥ <i>(d)</i></b></div>
+  <div class="notation p-par-not"><b><i>(d′)</i> <span class="par">//</span> <i>(d)</i></b></div>
+  <div class="notation p-par-not"><b><i>(d′)</i> = <i>(d)</i></b></div>
+</div>
+
+<p class="question" style="margin-top:22px">Que peut-on définir à partir d’une droite (d) et d’un point A du plan ?</p>
+
+<div class="grille">
+  <div><div>la <span class="vocab">droite perpendiculaire</span> à (d) <b>passant par</b> A.</div></div>
+  <div class="fig" data-fig="perpA"></div>
+  <div><div>la <span class="vocab">droite parallèle</span> à (d) <b>passant par</b> A.</div></div>
+  <div class="fig" data-fig="parA"></div>
+</div>
+
+<!-- ======================= IV ======================= -->
+<h2>IV) Droites parallèles et perpendiculaires <span class="fin">: propriétés</span></h2>
+
+<div class="propriete">
+  <div class="etiquette">Propriété :</div>
+  <div class="schema">
+    <div><p><b>Si</b> deux droites sont perpendiculaires à une même droite,</p>
+         <p><b>alors</b> elles sont parallèles entre elles.</p></div>
+    <div class="fig" data-fig="prop1"></div>
+    <div><p><b>on a</b> : <i>(d<sub>1</sub>)</i> ⊥ <i>(d<sub>3</sub>)</i> et <i>(d<sub>2</sub>)</i> ⊥ <i>(d<sub>3</sub>)</i></p>
+         <p><b>donc</b> : <span><i>(d<sub>1</sub>)</i> <span class="par">//</span> <i>(d<sub>2</sub>)</i></span></p></div>
+  </div>
+</div>
+
+<div class="propriete">
+  <div class="etiquette">Propriété :</div>
+  <div class="schema">
+    <div><p><b>Si</b> deux droites sont parallèles entre elles</p>
+         <p>et <b>si</b> une troisième est perpendiculaire à l’une,</p>
+         <p><b>alors</b> elle est aussi perpendiculaire à l’autre.</p></div>
+    <div class="fig" data-fig="prop2"></div>
+    <div><p><b>on a</b> : <i>(d<sub>1</sub>)</i> <span class="par">//</span> <i>(d<sub>2</sub>)</i> et <i>(d<sub>3</sub>)</i> ⊥ <i>(d<sub>1</sub>)</i></p>
+         <p><b>donc</b> : <span><i>(d<sub>3</sub>)</i> ⊥ <i>(d<sub>2</sub>)</i></span></p></div>
+  </div>
+</div>
+
+<div class="propriete">
+  <div class="etiquette">Propriété :</div>
+  <div class="schema">
+    <div><p><b>Si</b> deux droites sont parallèles à une même droite,</p>
+         <p><b>alors</b> elles sont parallèles entre elles.</p></div>
+    <div class="fig" data-fig="prop3"></div>
+    <div><p><b>on a</b> : <i>(d<sub>2</sub>)</i> <span class="par">//</span> <i>(d<sub>1</sub>)</i> et <i>(d<sub>3</sub>)</i> <span class="par">//</span> <i>(d<sub>1</sub>)</i></p>
+         <p><b>donc</b> : <span><i>(d<sub>2</sub>)</i> <span class="par">//</span> <i>(d<sub>3</sub>)</i></span></p></div>
+  </div>
+</div>
+
+</main>
+
+<script>
+/* =====================================================================
+   FIGURES — coordonnées reprises telles quelles du .tex (repère y vers le haut),
+   retournées ici pour le SVG.
+   ===================================================================== */
+const R = 'var(--rouge)', N = '#111', V = 'var(--vert-donnee)', M = 'var(--magenta)';
+
+// --- cadres 4,4 × 3 des parties II et III (pspicture (0.3,0)(4.7,3)) ---
+function cadre(contenu){
+  const y = v => (3 - v);
+  const o = {
+    seg:(x1,y1,x2,y2,c=R,w=.055,extra='') => `<line x1="${x1}" y1="${y(y1)}" x2="${x2}" y2="${y(y2)}" stroke="${c}" stroke-width="${w}" ${extra}/>`,
+    croix:(x,yy,lab,dx=-.05,dy=.12) => {const Y=y(yy),s=.07;
+      return `<path d="M${x-s} ${Y-s}L${x+s} ${Y+s}M${x-s} ${Y+s}L${x+s} ${Y-s}" stroke="#111" stroke-width=".025"/>`+
+             (lab?`<text x="${x+dx}" y="${Y-dy}" font-size=".27" font-style="italic">${lab}</text>`:'');},
+    txt:(x,yy,t,c='#111',fs=.3) => `<text x="${x}" y="${y(yy)}" font-size="${fs}" font-style="italic" fill="${c}">${t}</text>`,
+    // droite d'équation y = f(x) entre x1 et x2
+    f:(fn,x1,x2,c=R,w=.055) => `<line x1="${x1}" y1="${y(fn(x1))}" x2="${x2}" y2="${y(fn(x2))}" stroke="${c}" stroke-width="${w}"/>`,
+    y
+  };
+  return `<svg class="cad" viewBox="0.25 -0.05 4.5 3.1">
+      <rect x="0.3" y="0" width="4.4" height="3" fill="none" stroke="#111" stroke-width=".05"/>
+      <svg x="0.3" y="0" width="4.4" height="3" viewBox="0.3 0 4.4 3" overflow="hidden">${contenu(o)}</svg></svg>`;
+}
+
+const fAB = x => (5.357 - 1.009*x)/1.921;           // droite (AB) de la partie II
+const fd  = x => (0.9495 + 0.3695*x)/2.2356;        // droite (d) de la partie III
+const AB  = o => o.croix(1.5,2,'A') + o.croix(3.42,.99,'B');
+const trace = s => `<g class="trace">${s}</g>`;
+
+const FIG = {
+  droite:     o => trace(o.f(fAB,0,5)) + AB(o),
+  segment:    o => trace(o.f(fAB,1.5,3.42)) + AB(o),
+  demiAB:     o => trace(o.f(fAB,1.5,5)) + AB(o),
+  demiBA:     o => trace(o.f(fAB,0,3.42)) + AB(o),
+  longueur:   o => trace(o.seg(1.62,1.91,3.29,1.0,R,.05,'stroke-dasharray=".14 .12" marker-start="url(#fl)" marker-end="url(#fl)"')) +
+                   o.croix(1.5,2,'A') + o.croix(3.4,.95,'B'),
+  milieu:     o => trace(o.seg(1.5,2,3.42,.99,M,.04) +
+                   `<path d="M2.46 ${o.y(1.495)-.13}V${o.y(1.495)+.13}M2.33 ${o.y(1.495)}H2.59" stroke="${R}" stroke-width=".04"/>`) + AB(o),
+  cercleA:    o => trace(`<circle cx="1.9" cy="${o.y(1.5)}" r="1.2" fill="none" stroke="${R}" stroke-width=".055"/>`) +
+                   o.croix(1.9,1.5,'A',.08,.1) + o.croix(3.1,1.5,'B',.08,.1),
+  cercleB:    o => trace(`<circle cx="3.1" cy="${o.y(1.5)}" r="1.2" fill="none" stroke="${R}" stroke-width=".055"/>`) +
+                   o.croix(1.9,1.5,'A',-.25,.1) + o.croix(3.1,1.5,'B',.08,.1),
+
+  secantes:   o => o.f(fd,0,5,N,.035) + o.seg(0.783,3,3,0,R) +
+                   o.txt(3.9,1.27,'(d)') + o.txt(0.4,2.3,'(d′)',R) + o.txt(2.45,1.35,'S'),
+  perp:       o => o.f(fd,0,5,N,.035) + o.seg(1.3347,3,1.8306,0,R) +
+                   o.txt(3.9,1.27,'(d)') + o.txt(0.75,2.45,'(d′)',R),
+  paralleles: o => o.f(fd,0,5,N,.035) + o.f(x=>(3.9171+0.3695*x)/2.2356,0,5,R) +
+                   o.txt(3.9,1.27,'(d)') + o.txt(4.05,2.72,'(d′)',R),
+  confondues: o => o.f(x=>(2+0.3695*x)/2.2356,0,5,N,.035) + o.f(x=>(2.1+0.3695*x)/2.2356,0,5,R) +
+                   o.txt(4.05,1.27,'(d)') + o.txt(4.05,1.78,'(d′)',R),
+
+  perpA:      o => o.seg(0,.51,5,2.01,N,.035) + o.txt(3.95,1.3,'(d)',N,.26) +
+                   trace(o.seg(1.79,3,2.69,0) +
+                   `<polyline points="2.519,${o.y(1.265)} 2.462,${o.y(1.457)} 2.270,${o.y(1.400)}" fill="none" stroke="#111" stroke-width=".02"/>`) +
+                   o.croix(2,2.3,'A',-.3,.05),
+  parA:       o => o.seg(0,.51,5,2.01,N,.035) + o.txt(3.95,1.3,'(d)',N,.26) +
+                   trace(o.seg(0,1.7,5,3.2)) + o.croix(2,2.3,'A',-.15,.12),
+};
+
+// --- figures TikZ de la partie IV (clip (-4.6,-3.7)(4.6,3.7)) ---
+function tikz(contenu, haut=3.7){
+  const y = v => -v;
+  const o = {
+    d:(x1,y1,x2,y2) => `<line x1="${x1}" y1="${y(y1)}" x2="${x2}" y2="${y(y2)}" stroke="#111" stroke-width=".105" stroke-linecap="round"/>`,
+    lab:(x,yy,pos,i) => {const t=`(<tspan font-style="italic">d</tspan><tspan font-size=".55" dy=".18">${i}</tspan><tspan dy="-.18">)</tspan>`;
+      const a = pos==='right'?['start',.14,.28]:pos==='above'?['middle',0,-.2]:['middle',0,.75];
+      return `<text x="${x+a[1]}" y="${y(yy)+a[2]}" font-size=".8" text-anchor="${a[0]}" font-style="italic">${t}</text>`;},
+    angle:(p) => `<polyline points="${p.map(([a,b])=>a+','+y(b)).join(' ')}" fill="none" stroke="${V}" stroke-width=".09"/>`,
+    fleche:(x1,y1,x2,y2) => `<line x1="${x1}" y1="${y(y1)}" x2="${x2}" y2="${y(y2)}" stroke="${V}" stroke-width=".09" marker-end="url(#fv)"/>`,
+    rond:(x,yy,s) => `<circle cx="${x}" cy="${y(yy)}" r=".48" fill="#fff" stroke="${V}" stroke-width=".09"/>` +
+                     s.map(([a,b,c,d])=>`<line x1="${a}" y1="${y(b)}" x2="${c}" y2="${y(d)}" stroke="${V}" stroke-width=".063"/>`).join('')
+  };
+  return `<svg viewBox="-4.6 ${-haut} 9.2 ${haut+3.7}"><svg x="-4.6" y="${-haut}" width="9.2" height="${haut+3.7}"
+          viewBox="-4.6 ${-haut} 9.2 ${haut+3.7}" overflow="hidden">${contenu(o)}</svg></svg>`;
+}
+
+Object.assign(FIG, {
+  prop1: () => tikz(o =>
+    o.d(-18.045,-7.267,10.045,3.267) + o.d(3.267,-13.045,-7.267,15.045) + o.d(7.267,-13.045,-3.267,15.045) +
+    o.lab(-2.862,3.3,'right',1) + o.lab(1.138,3.3,'right',2) + o.lab(-3.2,-1.7,'above',3) +
+    o.angle([[-1.471,-0.411],[-0.909,-0.200],[-0.698,-0.762]]) + o.angle([[2.036,0.904],[2.598,1.115],[2.808,0.553]])),
+  prop2: () => tikz(o =>
+    o.d(-18.884,0.139,10.884,3.861) + o.d(-14.884,-3.361,14.884,0.361) + o.d(2.361,-14.884,-1.361,14.884) +
+    o.lab(3.2,2.9,'above',1) + o.lab(3.2,-1.1,'below',2) + o.lab(0.912,-3.3,'right',3) +
+    o.fleche(-3.218,0.581,-3.405,2.074) + o.fleche(-3.099,-0.371,-2.912,-1.864) +
+    o.rond(-3.158,0.105,[[-3.336,-0.069,-3.173,0.279],[-3.144,-0.069,-2.981,0.279]]) +
+    o.angle([[0.110,3.118],[0.706,3.193],[0.780,2.597]]), 4.2),
+  prop3: () => tikz(o =>
+    o.d(-18.552,-6.638,10.552,0.638) + o.d(-14.552,-3.138,14.552,4.138) + o.d(-14.552,-0.638,14.552,6.638) +
+    o.lab(-3.2,-2.8,'above',1) + o.lab(-3.2,-0.3,'above',2) + o.lab(-3.2,2.2,'above',3) +
+    o.fleche(0.178,-0.211,0,0.5) + o.fleche(0.411,-1.142,0.588,-1.853) +
+    o.rond(0.294,-0.676,[[0.117,-0.85,0.279,-0.502],[0.309,-0.85,0.471,-0.502]]) +
+    o.fleche(2.609,0.397,1.843,3.461) + o.fleche(2.842,-0.534,3.020,-1.245) +
+    o.rond(2.726,-0.069,[[2.548,-0.243,2.711,0.105],[2.740,-0.243,2.903,0.105]])),
+});
+
+// marqueurs de flèches partagés
+document.body.insertAdjacentHTML('afterbegin', `<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <marker id="fl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="${R}"/></marker>
+    <marker id="fv" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="3.6" markerHeight="3.6" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#2f9e44"/></marker>
+  </defs></svg>`);
+
+document.querySelectorAll('.fig[data-fig]').forEach(el => {
+  const k = el.dataset.fig, f = FIG[k];
+  el.innerHTML = k.startsWith('prop') ? f() : cadre(f);
+});
+
+/* =====================================================================
+   RÉVÉLATION
+   Au départ seuls les titres sont visibles, les parties sont repliées.
+   Cliquer un titre ouvre l'espace (blanc) de sa partie et la rend active :
+   tous les boutons et raccourcis n'agissent que sur la partie active.
+   Chaque bloc (question, cellule de tableau, colonne de propriété) passe par :
+     absent  → « Suivant » le fait apparaître, couvert d'un « ? »
+     cache   → le clic sur le « ? » révèle son contenu
+     révélé
+   ===================================================================== */
+const items = [...document.querySelectorAll(
+  '.question, .cadre > div, .grille > div, .positions > div, .propriete .schema > div')];
+items.forEach(e => e.classList.add('bloc'));
+
+// Regroupe tout ce qui suit chaque <h2> (jusqu'au suivant) dans une .zone repliable.
+const titres = [...document.querySelectorAll('h2')];
+const zones = titres.map(t => {
+  const z = document.createElement('div');
+  z.className = 'zone';
+  while (t.nextElementSibling && t.nextElementSibling.tagName !== 'H2') z.appendChild(t.nextElementSibling);
+  t.after(z);
+  return z;
+});
+const NUM = ['I','II','III','IV'];
+const blocsDe = i => items.filter(e => zones[i].contains(e));
+
+let partie = null;   // indice de la partie active
+const historique = titres.map(() => []);   // pour ← , par partie : {e, etape:'apparu'|'revele'}
+const proprietes = [...document.querySelectorAll('.propriete')];
+const compteur = document.getElementById('compteur');
+const boutons = ['btnSuivant','btnMasquer','btnReveler'].map(id => document.getElementById(id));
+
+titres.forEach((t, i) => t.addEventListener('click', () => {
+  partie = i;
+  zones[i].classList.add('ouverte');
+  titres.forEach((u, k) => u.classList.toggle('actif', k === i));
+  t.scrollIntoView({block:'start', behavior:'smooth'});
+  maj();
+}));
+
+function maj(){
+  // le cadre et l'étiquette « Propriété : » apparaissent avec le premier bloc de la propriété
+  proprietes.forEach(p => p.classList.toggle('vide', !p.querySelector('.bloc:not(.absent)')));
+  if (partie === null){
+    compteur.textContent = 'Cliquer un titre pour commencer';
+    boutons.forEach(b => b.disabled = true);
+    return;
+  }
+  const reste = blocsDe(partie).filter(e => e.classList.contains('absent')).length;
+  compteur.textContent = `Partie ${NUM[partie]} · ${reste ? reste + ' bloc' + (reste > 1 ? 's' : '') + ' à venir' : 'terminée'}`;
+  boutons.forEach(b => b.disabled = false);
+  boutons[0].disabled = !reste;
+}
+function suivant(){
+  if (partie === null) return;
+  const e = blocsDe(partie).find(e => e.classList.contains('absent'));
+  if (!e) return;
+  e.classList.remove('absent');
+  historique[partie].push({e, etape:'apparu'});
+  e.scrollIntoView({block:'nearest', behavior:'smooth'});
+  maj();
+}
+function precedent(){
+  if (partie === null) return;
+  const h = historique[partie].pop();
+  if (!h) return;
+  h.e.classList.add(h.etape === 'apparu' ? 'absent' : 'cache');
+  h.e.scrollIntoView({block:'nearest', behavior:'smooth'});
+  maj();
+}
+function tout(etat, i){   // 'absent' : partie remise à blanc · 'revele' : partie entièrement montrée
+  if (i === null) return;
+  blocsDe(i).forEach(e => {
+    e.classList.toggle('absent', etat === 'absent');
+    e.classList.toggle('cache', etat === 'absent');
+  });
+  historique[i].length = 0;
+  maj();
+}
+
+items.forEach(e => e.addEventListener('click', () => {
+  if (!e.classList.contains('cache') || e.classList.contains('absent')) return;
+  e.classList.remove('cache');
+  const i = zones.findIndex(z => z.contains(e));
+  historique[i].push({e, etape:'revele'});
+  maj();
+}));
+
+boutons[0].onclick = suivant;
+boutons[1].onclick = () => tout('absent', partie);
+boutons[2].onclick = () => tout('revele', partie);
+
+document.addEventListener('keydown', ev => {
+  if (['ArrowRight',' ','PageDown','Enter'].includes(ev.key)){ ev.preventDefault(); suivant(); }
+  else if (['ArrowLeft','PageUp','Backspace'].includes(ev.key)){ ev.preventDefault(); precedent(); }
+});
+
+titres.forEach((t, i) => tout('absent', i));
+</script>
+</body>
+</html>
