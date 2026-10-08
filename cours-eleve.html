@@ -58,7 +58,7 @@
   /* ---------- blocs à révéler : seuls les titres sont visibles au départ ---------- */
   .bloc{position:relative;transition:opacity .45s}
   .bloc.absent{opacity:0;pointer-events:none}
-  .bloc.cache{cursor:pointer}
+  .bloc{cursor:pointer}
   .bloc::after{content:"?";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
                background:#f3f4f7;color:#a3abbb;font:600 22px system-ui,sans-serif;border-radius:4px;
                opacity:0;pointer-events:none;transition:opacity .35s}
@@ -128,7 +128,7 @@
 
 <div class="outils">
   <span class="compteur" id="compteur"></span>
-  <span class="aide" style="color:#888">titre : ouvrir · → : suivant · clic sur ? : révéler · ← : annuler</span>
+  <span class="aide" style="color:#888">titre : ouvrir · → : suivant · clic : montrer / cacher · ← : annuler</span>
   <button id="btnOnglet" title="Ouvrir ce cours dans un nouvel onglet">↗ Nouvel onglet</button>
   <button id="btnMasquer">Masquer la partie</button>
   <button id="btnReveler">Révéler la partie</button>
@@ -382,8 +382,7 @@ document.querySelectorAll('.fig[data-fig]').forEach(el => {
    tous les boutons et raccourcis n'agissent que sur la partie active.
    Chaque bloc (question, cellule de tableau, colonne de propriété) passe par :
      absent  → « Suivant » le fait apparaître, couvert d'un « ? »
-     cache   → le clic sur le « ? » révèle son contenu
-     révélé
+     cache   ⇄ révélé : le clic sur le bloc bascule entre « ? » et contenu
    ===================================================================== */
 const items = [...document.querySelectorAll(
   '.question, .cadre > div, .grille > div, .positions > div, .propriete .schema > div')];
@@ -402,7 +401,7 @@ const NUM = ['I','II','III','IV'];
 const blocsDe = i => items.filter(e => zones[i].contains(e));
 
 let partie = null;   // indice de la partie active
-const historique = titres.map(() => []);   // pour ← , par partie : {e, etape:'apparu'|'revele'}
+const historique = titres.map(() => []);   // pour ← , par partie : {e, etape:'apparu'|'revele'|'recache'}
 const proprietes = [...document.querySelectorAll('.propriete')];
 const compteur = document.getElementById('compteur');
 const boutons = ['btnSuivant','btnMasquer','btnReveler'].map(id => document.getElementById(id));
@@ -441,7 +440,8 @@ function precedent(){
   if (partie === null) return;
   const h = historique[partie].pop();
   if (!h) return;
-  h.e.classList.add(h.etape === 'apparu' ? 'absent' : 'cache');
+  if (h.etape === 'apparu') h.e.classList.add('absent');
+  else h.e.classList.toggle('cache', h.etape === 'revele');
   h.e.scrollIntoView({block:'nearest', behavior:'smooth'});
   maj();
 }
@@ -456,10 +456,11 @@ function tout(etat, i){   // 'absent' : partie remise à blanc · 'revele' : par
 }
 
 items.forEach(e => e.addEventListener('click', () => {
-  if (!e.classList.contains('cache') || e.classList.contains('absent')) return;
-  e.classList.remove('cache');
+  if (e.classList.contains('absent')) return;
+  // bascule : « ? » → contenu → « ? » …
+  const etape = e.classList.toggle('cache') ? 'recache' : 'revele';
   const i = zones.findIndex(z => z.contains(e));
-  historique[i].push({e, etape:'revele'});
+  historique[i].push({e, etape});
   maj();
 }));
 
