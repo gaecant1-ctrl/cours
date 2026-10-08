@@ -129,6 +129,7 @@
 <div class="outils">
   <span class="compteur" id="compteur"></span>
   <span class="aide" style="color:#888">titre : ouvrir · → : suivant · clic sur ? : révéler · ← : annuler</span>
+  <button id="btnOnglet" title="Ouvrir ce cours dans un nouvel onglet">↗ Nouvel onglet</button>
   <button id="btnMasquer">Masquer la partie</button>
   <button id="btnReveler">Révéler la partie</button>
   <button id="btnSuivant" class="principal">Suivant →</button>
@@ -462,6 +463,7 @@ items.forEach(e => e.addEventListener('click', () => {
   maj();
 }));
 
+document.getElementById('btnOnglet').onclick = () => window.open(location.href, '_blank');
 boutons[0].onclick = suivant;
 boutons[1].onclick = () => tout('absent', partie);
 boutons[2].onclick = () => tout('revele', partie);
