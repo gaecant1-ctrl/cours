@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perpendiculaires : plan et sphère</title>
+<style>
+  :root {
+    --fond: #f6f7fb; --carte: #fff; --texte: #1f2937; --gris: #6b7280;
+    --d: #dc2626; --d1: #2563eb; --d2: #16a34a; --pt: #111827; --acc: #7c3aed;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--fond); color: var(--texte); }
+  header { display: flex; gap: 8px; padding: 10px 16px; background: var(--carte); border-bottom: 1px solid #e5e7eb; flex-wrap: wrap; align-items: center; }
+  header h1 { font-size: 1.1rem; margin: 0 16px 0 0; }
+  .onglet { border: 1px solid #d1d5db; background: #fff; padding: 8px 14px; border-radius: 8px; font-size: 1rem; cursor: pointer; }
+  .onglet.actif { background: var(--acc); color: #fff; border-color: var(--acc); }
+  main { max-width: 1100px; margin: 0 auto; padding: 12px 16px; }
+  .vue { display: none; }
+  .vue.actif { display: block; }
+  .zone { background: var(--carte); border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 12px; }
+  canvas { width: 100%; display: block; touch-action: none; border-radius: 8px; }
+  .barre { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  .barre .droite { margin-left: auto; display: flex; gap: 8px; }
+  button.b { border: 1px solid #d1d5db; background: #fff; padding: 8px 12px; border-radius: 8px; font-size: 1rem; cursor: pointer; }
+  button.b.on { background: #ede9fe; border-color: var(--acc); }
+  button.b:disabled { opacity: .4; cursor: default; }
+  button.b.prim { background: var(--acc); color: #fff; border-color: var(--acc); }
+  .msg { margin-top: 10px; font-size: 1.25rem; min-height: 2.2em; line-height: 1.4; }
+  .d { color: var(--d); font-weight: 700; } .d1 { color: var(--d1); font-weight: 700; } .d2 { color: var(--d2); font-weight: 700; }
+  label.curseur { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+  .propriete { margin-top: 10px; border-left: 5px solid var(--acc); background: #f5f3ff; padding: 10px 14px; border-radius: 6px; font-size: 1.15rem; }
+  .aide { color: var(--gris); font-size: .9rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Deux perpendiculaires à une même droite</h1>
+  <button class="onglet actif" data-vue="sphere">1. Sur la sphère</button>
+  <button class="onglet" data-vue="plan">2. Dans le plan</button>
+  <button class="onglet" data-vue="pourquoi">3. Pourquoi ?</button>
+</header>
+
+<main>
+  <!-- ========== SPHERE ========== -->
+  <section class="vue actif" id="sphere">
+    <div class="zone">
+      <canvas id="cSphere"></canvas>
+      <div class="barre">
+        <button class="b" id="bAngles">Angles droits</button>
+        <button class="b" id="bPoles">Points communs</button>
+        <button class="b" id="bAutres">D'autres « droites » par N et S</button>
+        <button class="b" id="bTourne">Tourner</button>
+        <label class="curseur">Écart <input type="range" id="ecart" min="15" max="165" value="30"></label>
+        <label class="curseur">Opacité <input type="range" id="opacite" min="0" max="100" value="85"></label>
+      </div>
+      <div class="msg" id="mSphere">Sur la sphère, les « droites » sont les grands cercles. <span class="d">(d)</span> : l'équateur.</div>
+      <div class="aide">Faire glisser la sphère pour la tourner.</div>
+    </div>
+  </section>
+
+  <!-- ========== PLAN ========== -->
+  <section class="vue" id="plan">
+    <div class="zone">
+      <canvas id="cPlan"></canvas>
+      <div class="barre">
+        <button class="b" id="bAnglesP">Angles droits</button>
+        <button class="b" id="bEcartP">Mesurer l'écart</button>
+      </div>
+      <div class="msg" id="mPlan"><span class="d1">(d1)</span> ⊥ <span class="d">(d)</span> et <span class="d2">(d2)</span> ⊥ <span class="d">(d)</span>. Se coupent-elles ?</div>
+      <div class="aide">Faire glisser les points H₁ et H₂.</div>
+    </div>
+  </section>
+
+  <!-- ========== POURQUOI ========== -->
+  <section class="vue" id="pourquoi">
+    <div class="zone">
+      <canvas id="cPq"></canvas>
+      <div class="barre">
+        <span id="etape" class="aide"></span>
+        <div class="droite">
+          <button class="b" id="bPrec">◀</button>
+          <button class="b prim" id="bSuiv">Suivant ▶</button>
+        </div>
+      </div>
+      <div class="msg" id="mPq"></div>
+      <div id="propPq"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const C = { d: '#dc2626', d1: '#2563eb', d2: '#16a34a', pt: '#111827', acc: '#7c3aed', gris: '#9ca3af' };
+
+/* ---------- outils canvas ---------- */
+function prepare(cv, ratio) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth;
+  const h = Math.min(Math.round(w * ratio), Math.round(window.innerHeight * 0.62));
+  cv.style.height = h + 'px';
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, W: w, H: h };
+}
+function texte(ctx, s, x, y, coul, taille = 20, gras = true) {
+  ctx.font = `${gras ? '700 ' : ''}${taille}px system-ui, sans-serif`;
+  ctx.fillStyle = coul; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(s, x, y);
+}
+function point(ctx, x, y, coul = C.pt, r = 5, plein = true) {
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI);
+  if (plein) { ctx.fillStyle = coul; ctx.fill(); }
+  else { ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = coul; ctx.lineWidth = 2; ctx.stroke(); }
+}
+function angleDroitPlan(ctx, x, y, ux, uy, vx, vy, s = 16) {
+  ctx.beginPath();
+  ctx.moveTo(x + ux * s, y + uy * s);
+  ctx.lineTo(x + ux * s + vx * s, y + uy * s + vy * s);
+  ctx.lineTo(x + vx * s, y + vy * s);
+  ctx.strokeStyle = C.pt; ctx.lineWidth = 2; ctx.setLineDash([]); ctx.stroke();
+}
+
+/* ---------- onglets ---------- */
+document.querySelectorAll('.onglet').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.onglet').forEach(o => o.classList.toggle('actif', o === b));
+  document.querySelectorAll('.vue').forEach(v => v.classList.toggle('actif', v.id === b.dataset.vue));
+  dessinerTout();
+});
+
+/* =====================================================
+   1. SPHÈRE
+   ===================================================== */
+const S = { yaw: 0.35, pitch: 0.32, angles: false, poles: false, autres: false, tourne: false };
+const cS = document.getElementById('cSphere');
+const deg = Math.PI / 180;
+
+function surSphere(lat, lon) {
+  return [Math.cos(lat) * Math.sin(lon), Math.sin(lat), Math.cos(lat) * Math.cos(lon)];
+}
+function tourner(p) {
+  const cy = Math.cos(S.yaw), sy = Math.sin(S.yaw), cp = Math.cos(S.pitch), sp = Math.sin(S.pitch);
+  const x = p[0] * cy + p[2] * sy, z = -p[0] * sy + p[2] * cy, y = p[1];
+  return [x, y * cp - z * sp, y * sp + z * cp];
+}
+
+function dessinerSphere() {
+  const { ctx, W, H } = prepare(cS, 0.62);
+  const R = Math.min(W, H) * 0.4, cx = W / 2, cy = H / 2;
+  const proj = p => { const q = tourner(p); return { x: cx + R * q[0], y: cy - R * q[1], vis: q[2] >= 0 }; };
+  const opacite = +document.getElementById('opacite').value / 100;
+  const ecart = +document.getElementById('ecart').value * deg;
+  const L1 = -ecart / 2, L2 = ecart / 2;
+
+  const N = 240;
+  const grandCercleMeridien = L => Array.from({ length: N + 1 }, (_, i) => {
+    const t = i / N * 2 * Math.PI; // parcourt le grand cercle complet
+    return [Math.sin(t) * Math.sin(L), Math.cos(t), Math.sin(t) * Math.cos(L)];
+  });
+  const equateur = Array.from({ length: N + 1 }, (_, i) => surSphere(0, i / N * 2 * Math.PI));
+
+  // dessine tout ce qui est sur la face « face » (false = arrière, true = avant)
+  function couche(face) {
+    function courbe(pts3, coul, ep = 3.5) {
+      const pts = pts3.map(proj);
+      ctx.strokeStyle = coul;
+      ctx.lineWidth = face ? ep : ep * 0.6;
+      ctx.setLineDash(face ? [] : [6, 6]);
+      ctx.beginPath();
+      let enCours = false;
+      for (const p of pts) {
+        if (p.vis === face) {
+          if (!enCours) { ctx.moveTo(p.x, p.y); enCours = true; } else ctx.lineTo(p.x, p.y);
+        } else enCours = false;
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    if (S.autres) {
+      for (let k = 0; k < 6; k++) courbe(grandCercleMeridien(L2 + (k + 1) * 26 * deg), C.acc, 2.2);
+    }
+    courbe(equateur, C.d);
+    courbe(grandCercleMeridien(L1), C.d1);
+    courbe(grandCercleMeridien(L2), C.d2);
+
+    // angles droits aux pieds H1, H2
+    for (const [L, sens] of [[L1, 1], [L2, -1]]) {
+      const Q = surSphere(0, L), pq = proj(Q);
+      if (pq.vis !== face) continue;
+      if (S.angles) {
+        const e = [Math.cos(L) * sens, 0, -Math.sin(L) * sens], s = 0.1;
+        const a = proj([Q[0] + s * e[0], Q[1], Q[2] + s * e[2]]);
+        const b = proj([Q[0] + s * e[0], Q[1] + s, Q[2] + s * e[2]]);
+        const c = proj([Q[0], Q[1] + s, Q[2]]);
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(c.x, c.y);
+        ctx.strokeStyle = C.pt; ctx.lineWidth = 2; ctx.stroke();
+      }
+      point(ctx, pq.x, pq.y, C.pt, 4, face);
+    }
+
+    // étiquettes
+    function etiquette(p3, txt, coul, dx = 0, dy = 0) {
+      const p = proj(p3);
+      if (p.vis === face) texte(ctx, txt, p.x + dx, p.y + dy, coul, 20);
+    }
+    etiquette(surSphere(0, L1), 'H₁', C.pt, -14, 16);
+    etiquette(surSphere(0, L2), 'H₂', C.pt, 14, 16);
+    etiquette(surSphere(-9 * deg, L1 - 35 * deg), '(d)', C.d);
+    etiquette(surSphere(40 * deg, L1), '(d1)', C.d1, -28, 0);
+    etiquette(surSphere(40 * deg, L2), '(d2)', C.d2, 28, 0);
+
+    // pôles
+    for (const [p3, nom, dy] of [[[0, 1, 0], 'N', -18], [[0, -1, 0], 'S', 18]]) {
+      const p = proj(p3);
+      if (p.vis !== face) continue;
+      if (S.poles) { ctx.beginPath(); ctx.arc(p.x, p.y, 16, 0, 2 * Math.PI); ctx.fillStyle = 'rgba(124,58,237,.18)'; ctx.fill(); }
+      point(ctx, p.x, p.y, S.poles ? C.acc : C.pt, S.poles ? 8 : 5, face);
+      texte(ctx, nom, p.x + 16, p.y + dy, S.poles ? C.acc : C.pt, 22);
+    }
+  }
+
+  ctx.clearRect(0, 0, W, H);
+  couche(false);
+  // boule : plus elle est opaque, plus elle cache la face arrière
+  const g = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
+  g.addColorStop(0, '#eef6ff'); g.addColorStop(1, '#9fc0e6');
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+  ctx.globalAlpha = opacite; ctx.fillStyle = g; ctx.fill(); ctx.globalAlpha = 1;
+  ctx.strokeStyle = '#7aa3cf'; ctx.lineWidth = 1.5; ctx.stroke();
+  couche(true);
+}
+
+function msgSphere() {
+  const m = document.getElementById('mSphere');
+  if (S.autres) m.innerHTML = 'Par N et S passent <b>une infinité</b> de « droites ».';
+  else if (S.poles) m.innerHTML = '<span class="d1">(d1)</span> et <span class="d2">(d2)</span> se coupent en <b>N</b> et en <b>S</b>. Elles ne sont pas parallèles !';
+  else if (S.angles) m.innerHTML = '<span class="d1">(d1)</span> ⊥ <span class="d">(d)</span> et <span class="d2">(d2)</span> ⊥ <span class="d">(d)</span>.';
+  else m.innerHTML = 'Sur la sphère, les « droites » sont les grands cercles. <span class="d">(d)</span> : l\'équateur.';
+}
+function bascule(id, cle) {
+  const b = document.getElementById(id);
+  b.onclick = () => { S[cle] = !S[cle]; b.classList.toggle('on', S[cle]); msgSphere(); dessinerSphere(); if (cle === 'tourne' && S.tourne) anim(); };
+}
+bascule('bAngles', 'angles'); bascule('bPoles', 'poles'); bascule('bAutres', 'autres'); bascule('bTourne', 'tourne');
+document.getElementById('ecart').oninput = dessinerSphere;
+document.getElementById('opacite').oninput = dessinerSphere;
+
+function anim() {
+  if (!S.tourne) return;
+  S.yaw += 0.008; dessinerSphere();
+  requestAnimationFrame(anim);
+}
+(() => {
+  let glisse = null;
+  cS.addEventListener('pointerdown', e => { glisse = { x: e.clientX, y: e.clientY }; cS.setPointerCapture(e.pointerId); });
+  cS.addEventListener('pointermove', e => {
+    if (!glisse) return;
+    S.yaw += (e.clientX - glisse.x) * 0.008;
+    S.pitch = Math.max(-1.4, Math.min(1.4, S.pitch + (e.clientY - glisse.y) * 0.008));
+    glisse = { x: e.clientX, y: e.clientY };
+    dessinerSphere();
+  });
+  cS.addEventListener('pointerup', () => glisse = null);
+})();
+
+/* =====================================================
+   2. PLAN
+   ===================================================== */
+const P = { h1: 0.46, h2: 0.54, angles: false, ecart: false };
+const cP = document.getElementById('cPlan');
+
+function dessinerPlan() {
+  const { ctx, W, H } = prepare(cP, 0.55);
+  ctx.clearRect(0, 0, W, H);
+
+  const yd = H / 2, x1 = P.h1 * W, x2 = P.h2 * W;
+  const trait = (ax, ay, bx, by, coul, ep = 3.5) => { ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.strokeStyle = coul; ctx.lineWidth = ep; ctx.setLineDash([]); ctx.stroke(); };
+  trait(0, yd, W, yd, C.d);
+  trait(x1, 0, x1, H, C.d1);
+  trait(x2, 0, x2, H, C.d2);
+  if (P.angles) {
+    const s1 = x2 > x1 ? 1 : -1;
+    angleDroitPlan(ctx, x1, yd, s1, 0, 0, -1);
+    angleDroitPlan(ctx, x2, yd, -s1, 0, 0, -1);
+  }
+  if (P.ecart) {
+    const cm = Math.abs(x2 - x1) / 40;
+    for (const y of [H * 0.12, H * 0.88]) {
+      ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y);
+      ctx.strokeStyle = C.acc; ctx.lineWidth = 2; ctx.setLineDash([5, 4]); ctx.stroke(); ctx.setLineDash([]);
+      texte(ctx, cm.toFixed(1).replace('.', ',') + ' cm', (x1 + x2) / 2, y - 14, C.acc, 18);
+    }
+  }
+  texte(ctx, '(d)', W - 30, yd - 18, C.d);
+  texte(ctx, '(d1)', x1 + (x1 < x2 ? -30 : 30), 22, C.d1);
+  texte(ctx, '(d2)', x2 + (x1 < x2 ? 30 : -30), 22, C.d2);
+  for (const [x, nom, coul] of [[x1, 'H₁', C.d1], [x2, 'H₂', C.d2]]) {
+    ctx.beginPath(); ctx.arc(x, yd, 11, 0, 2 * Math.PI); ctx.fillStyle = coul + '33'; ctx.fill();
+    point(ctx, x, yd, C.pt, 5);
+    texte(ctx, nom, x + 18, yd + 20, C.pt, 18);
+  }
+}
+(() => {
+  let saisi = null;
+  const pos = e => { const r = cP.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }; };
+  cP.addEventListener('pointerdown', e => {
+    const p = pos(e); if (Math.abs(p.y - 0.5) > 0.12) return;
+    saisi = Math.abs(p.x - P.h1) < Math.abs(p.x - P.h2) ? 'h1' : 'h2';
+    cP.setPointerCapture(e.pointerId);
+  });
+  cP.addEventListener('pointermove', e => {
+    if (!saisi) return;
+    const autre = saisi === 'h1' ? P.h2 : P.h1;
+    let x = Math.max(0.05, Math.min(0.95, pos(e).x));
+    if (Math.abs(x - autre) < 0.04) return; // pas confondues
+    P[saisi] = x; dessinerPlan();
+  });
+  cP.addEventListener('pointerup', () => saisi = null);
+})();
+document.getElementById('bAnglesP').onclick = e => { P.angles = !P.angles; e.target.classList.toggle('on', P.angles); dessinerPlan(); };
+document.getElementById('bEcartP').onclick = e => {
+  P.ecart = !P.ecart; e.target.classList.toggle('on', P.ecart); dessinerPlan();
+  document.getElementById('mPlan').innerHTML = P.ecart
+    ? 'L\'écart reste le même : elles ne se coupent jamais. Elles sont <b>parallèles</b>.'
+    : '<span class="d1">(d1)</span> ⊥ <span class="d">(d)</span> et <span class="d2">(d2)</span> ⊥ <span class="d">(d)</span>. Se coupent-elles ?';
+};
+
+/* =====================================================
+   3. POURQUOI ?
+   ===================================================== */
+const ETAPES = [
+  '<span class="d1">(d1)</span> ⊥ <span class="d">(d)</span> et <span class="d2">(d2)</span> ⊥ <span class="d">(d)</span>.',
+  'Imaginons qu\'elles se coupent en un point <b>P</b>, comme N sur la sphère.',
+  'Symétrie d\'axe <span class="d">(d)</span> : <span class="d1">(d1)</span> et <span class="d2">(d2)</span> ne bougent pas. Elles passeraient aussi par <b>P\'</b>, comme S.',
+  'Mais dans le plan, par <b>P</b> et <b>P\'</b> passe <b>une seule droite</b>. Donc <span class="d1">(d1)</span> et <span class="d2">(d2)</span> seraient la même droite. Impossible !',
+  'Donc <span class="d1">(d1)</span> et <span class="d2">(d2)</span> ne se coupent pas : elles sont <b>parallèles</b>.'
+];
+let etape = 0;
+const cQ = document.getElementById('cPq');
+
+function dessinerPq() {
+  const { ctx, W, H } = prepare(cQ, 0.55);
+  ctx.clearRect(0, 0, W, H);
+  const yd = H / 2, x1 = W * 0.4, x2 = W * 0.6, px = W / 2, py = H * 0.1, pyb = H * 0.9;
+  const ligne = (pts, coul, ep = 3.5, tirets = []) => {
+    ctx.beginPath(); ctx.moveTo(pts[0], pts[1]);
+    if (pts.length === 4) ctx.lineTo(pts[2], pts[3]);
+    else ctx.bezierCurveTo(pts[2], pts[3], pts[4], pts[5], pts[6], pts[7]);
+    ctx.strokeStyle = coul; ctx.lineWidth = ep; ctx.setLineDash(tirets); ctx.stroke(); ctx.setLineDash([]);
+  };
+  // courbe « comme sur la sphère » de H vers P (ou P')
+  const arc = (hx, ty) => [hx, yd, hx, yd + (ty - yd) * 0.55, px + (hx - px) * 0.55, ty + (yd - ty) * 0.12, px, ty];
+
+  ligne([0, yd, W, yd], C.d);
+  texte(ctx, '(d)', W - 30, yd - 18, C.d);
+
+  if (etape === 0 || etape === 4) {
+    ligne([x1, 0, x1, H], C.d1); ligne([x2, 0, x2, H], C.d2);
+    texte(ctx, '(d1)', x1 - 30, 22, C.d1); texte(ctx, '(d2)', x2 + 30, 22, C.d2);
+    if (etape === 4) texte(ctx, '(d1) // (d2)', W / 2, H * 0.78, C.acc, 26);
+  } else {
+    const t = [8, 6];
+    ligne(arc(x1, py), C.d1, 3.5, t); ligne(arc(x2, py), C.d2, 3.5, t);
+    texte(ctx, '(d1)', x1 - 34, yd - 60, C.d1); texte(ctx, '(d2)', x2 + 34, yd - 60, C.d2);
+    point(ctx, px, py, C.acc, 7); texte(ctx, 'P', px + 22, py, C.acc, 22);
+    if (etape >= 2) {
+      ligne(arc(x1, pyb), C.d1, 3.5, t); ligne(arc(x2, pyb), C.d2, 3.5, t);
+      point(ctx, px, pyb, C.acc, 7); texte(ctx, "P'", px + 24, pyb, C.acc, 22);
+      if (etape === 2) {
+        ctx.beginPath(); ctx.moveTo(px + 60, py + 10); ctx.quadraticCurveTo(px + 140, yd, px + 60, pyb - 10);
+        ctx.strokeStyle = C.gris; ctx.lineWidth = 2; ctx.setLineDash([3, 4]); ctx.stroke(); ctx.setLineDash([]);
+        texte(ctx, 'symétrie', px + 150, yd - 20, C.gris, 16, false);
+      }
+    }
+    if (etape === 3) {
+      ligne([px, 0, px, H], C.pt, 4);
+      texte(ctx, "(PP')", px + 40, H * 0.3, C.pt, 20);
+      texte(ctx, '✗', px - 120, H * 0.25, C.d, 46);
+    }
+  }
+  if (etape === 0 || etape === 4) {
+    angleDroitPlan(ctx, x1, yd, 1, 0, 0, -1); angleDroitPlan(ctx, x2, yd, -1, 0, 0, -1);
+  } else {
+    angleDroitPlan(ctx, x1, yd, 1, 0, 0, -1); angleDroitPlan(ctx, x2, yd, -1, 0, 0, -1);
+  }
+  point(ctx, x1, yd); point(ctx, x2, yd);
+  texte(ctx, 'H₁', x1 - 18, yd + 20, C.pt, 18); texte(ctx, 'H₂', x2 + 18, yd + 20, C.pt, 18);
+
+  document.getElementById('mPq').innerHTML = ETAPES[etape];
+  document.getElementById('etape').textContent = `Étape ${etape + 1} / ${ETAPES.length}`;
+  document.getElementById('bPrec').disabled = etape === 0;
+  document.getElementById('bSuiv').disabled = etape === ETAPES.length - 1;
+  document.getElementById('propPq').innerHTML = etape === ETAPES.length - 1
+    ? `<div class="propriete"><b>Propriété.</b> Dans le plan, si deux droites sont perpendiculaires à une même droite, alors elles sont parallèles.</div>
+       <div class="propriete" style="border-color:#9ca3af;background:#f3f4f6">Sur la sphère, c'est faux : par N et S passent une infinité de « droites ».</div>`
+    : '';
+}
+document.getElementById('bPrec').onclick = () => { if (etape > 0) { etape--; dessinerPq(); } };
+document.getElementById('bSuiv').onclick = () => { if (etape < ETAPES.length - 1) { etape++; dessinerPq(); } };
+
+/* ---------- général ---------- */
+function dessinerTout() {
+  if (document.getElementById('sphere').classList.contains('actif')) dessinerSphere();
+  if (document.getElementById('plan').classList.contains('actif')) dessinerPlan();
+  if (document.getElementById('pourquoi').classList.contains('actif')) dessinerPq();
+}
+window.addEventListener('resize', dessinerTout);
+dessinerTout();
+</script>
+</body>
+</html>
