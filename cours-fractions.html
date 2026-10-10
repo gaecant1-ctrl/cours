@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les fractions</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap">
+<style>
+  :root{
+    --encre:#1d1d1d;
+    --titre:#9b1c1c;
+    --vocab:#1f6b2a;
+    --rouge:#e01b1b;
+    --bleu:#1a3fd6;
+    --orange:#c25e00;
+    --surligne:#fff1b8;
+    --bord:#333;
+    --fond:#fff;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--fond);color:var(--encre);
+       font-family:'STIX Two Text', 'Times New Roman', serif;font-size:19px;line-height:1.45}
+  main{max-width:1020px;margin:0 auto;padding:16px 16px 80px}
+
+  /* ---------- panneau latéral droit, en surimpression (ne pousse pas le cours) ---------- */
+  .outils{position:fixed;top:0;right:0;bottom:0;width:210px;z-index:10;display:flex;flex-direction:column;gap:8px;
+          padding:16px 12px;background:rgba(250,247,247,.97);border-left:1px solid #e3e3e3;overflow-y:auto;
+          box-shadow:-6px 0 18px rgba(0,0,0,.08);font-family:system-ui, sans-serif;font-size:14px;
+          transition:transform .25s, box-shadow .25s}
+  /* replier : bouton en haut du panneau ; déplier : bouton flottant en haut à droite */
+  #btnReplier{align-self:flex-end;font-size:13px;padding:4px 10px;color:#555}
+  #btnDeplier{position:fixed;top:12px;right:12px;z-index:11;display:none;
+              font:600 14px system-ui, sans-serif;padding:8px 14px;border-radius:8px;cursor:pointer;
+              border:1px solid var(--titre);background:#fff;color:var(--titre);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+  #btnDeplier:hover{background:#fcd6d6}
+  body.replie #btnDeplier{display:block}
+  body.replie .outils{transform:translateX(100%);box-shadow:none}
+  .outils .compteur{color:#666;min-height:2.6em;line-height:1.3}
+  .outils .groupe{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+  .outils .groupe > span{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#999}
+  .outils button{font:inherit;text-align:left;padding:7px 10px;border-radius:8px;border:1px solid #c9c9c9;background:#fff;cursor:pointer;line-height:1.25}
+  .outils button:hover{background:#f3f3f3}
+  .outils button.principal{background:var(--titre);border-color:var(--titre);color:#fff;font-weight:600;padding:10px}
+  .outils button.principal:hover{background:#7c1515}
+  .outils button.principal small{display:block;font-weight:400;font-size:12px;opacity:.85}
+  .outils button:disabled{opacity:.4;cursor:default}
+  .outils .aide{margin-top:auto;color:#888;font-size:12.5px;line-height:1.5}
+
+  /* ---------- titres ---------- */
+  .chapitre{border:1.5px solid var(--titre);background:#fcd6d6;border-radius:12px;text-align:center;
+            font-weight:700;font-size:1.35em;padding:10px;margin:12px 0 18px}
+  h2{color:var(--titre);font-size:1.3em;margin:30px 0 12px;display:table;
+     border-bottom:1.5px solid var(--titre);padding-bottom:1px}
+  h2{scroll-margin-top:16px;cursor:pointer;opacity:.45;transition:opacity .3s, background-color .3s;border-radius:6px 6px 0 0;padding:2px 8px 1px;margin-left:-8px}
+  h2:hover{opacity:.75}
+  h2.actif{opacity:1;background:#fcd6d6}
+  h2.vu{opacity:1}
+  h2.masque{display:none}
+  h2::before{content:"▸ ";font-size:.75em;vertical-align:.1em}
+  h2.ouvert::before{content:"▾ "}
+  .zone{display:none}
+  .zone.ouverte{display:block}
+
+  .vocab{color:var(--vocab);font-weight:700}
+  .ex{color:var(--orange);font-weight:700}
+  .r{color:var(--rouge);font-weight:700}
+  .nb{white-space:nowrap}
+  b{font-weight:700}
+  p{margin:0 0 10px}
+  p:last-child{margin:0}
+  .etiq{margin:16px 0 8px}
+  .texte{margin:0 0 12px}
+  .sep{display:inline-block;width:3.2em}
+
+  /* ---------- blocs à révéler ---------- */
+  .b{position:relative;transition:opacity .45s;cursor:pointer}
+  .b.absent{opacity:0;pointer-events:none}
+  .b::after{content:"?";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+            background:#f3f4f7;color:#a3abbb;font:600 22px system-ui,sans-serif;border-radius:4px;
+            opacity:0;pointer-events:none;transition:opacity .35s}
+  .b.cache::after{opacity:1}
+  .b.cache:hover::after{background:#e8ebf1}
+  /* 2e niveau de « ? » : les trous « à compléter » à l'intérieur d'un item.
+     Ils sont là dès que l'item est montré ; le clic les dévoile. */
+  .b.trou{display:inline-block;min-width:1.6em;text-align:center}
+  .b.trou::after{font-size:14px;background:#fff1c9;color:#c79a1e;border:1px dashed #e3c25a}
+  .b.trou.cache:hover::after{background:#ffe8a8}
+  /* tant que l'item est sous « ? », ses trous ne doivent pas capter le clic (il revient à l'item) */
+  .b.cache .b.trou, .b.cache .tri{pointer-events:none}
+  .b.trou.raison{margin-left:1.2em}
+
+
+  /* ---------- fractions ---------- */
+  .fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.05;margin:0 .12em;font-size:.92em}
+  .fr > i{font-style:normal;padding:0 .2em}
+  .fr > i:first-child{border-bottom:1.4px solid currentColor;padding-bottom:1px}
+  .fr i i{font-style:italic}
+  .cb{color:var(--bleu)} .cr{color:var(--titre)}
+  .alice{color:#2a55c9;font-weight:700} .bilal{color:#b02525;font-weight:700} .chloe{color:#2a8a3a;font-weight:700}
+  .centre{text-align:center}
+  .comment{font-style:italic;color:#444}
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:6px 0 14px}
+  .trio{display:grid;grid-template-columns:1fr auto 1fr;gap:18px;align-items:start;margin:6px 0 14px}
+  .duo > .b, .trio > .b{text-align:center}
+  .duo p, .trio p{margin:0 0 8px}
+  .fig svg{display:block;margin:0 auto;max-width:100%}
+  .calc{display:inline-grid;grid-template-columns:auto auto auto;column-gap:.4em;row-gap:8px;align-items:center;text-align:left}
+  .calc > span:nth-child(3n+1){text-align:right}
+  .ligne3{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .duree{display:flex;gap:2.5em;flex-wrap:wrap;align-items:center}
+  .duree > .nb{min-width:22em}
+  .texte{line-height:2}
+  @media (max-width:760px){ .duo, .trio{grid-template-columns:1fr} }
+
+  /* ---------- exemple à trier par glisser-déposer ---------- */
+  .tri{margin-top:10px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+  .tri .reserve{display:flex;gap:10px;flex-wrap:wrap;min-height:46px;min-width:320px;padding:6px 8px;
+                border:1.5px dashed #bbb;border-radius:10px;align-items:center}
+  .tri.fini .reserve{display:none}   /* nombres tous placés et bien rangés : la zone disparaît */
+  .tri .cases{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 8px;border-radius:10px;border:2px solid transparent;transition:background .3s, border-color .3s}
+  .tri .cases::after{font:700 22px system-ui,sans-serif;margin-left:6px}
+  .tri .case{display:inline-flex;align-items:center;justify-content:center;min-width:4em;height:42px;
+             border:1.5px dashed #e3c25a;background:#fff1c9;border-radius:8px}
+  .tri .case:empty::before{content:"?";color:#c79a1e;font:600 15px system-ui,sans-serif}
+  .tri .case.survol, .tri .reserve.survol{outline:3px solid #8fb4ff}
+  .tri .signe{font-weight:700;font-size:1.15em}
+  .tri .fixe{font-weight:700;padding:0 4px}
+  .tri .jeton{display:inline-block;padding:4px 12px;border:1.5px solid #333;border-radius:8px;background:#fff;
+              font-weight:700;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none}
+  .tri .jeton.tire{cursor:grabbing;position:relative;z-index:20;box-shadow:0 6px 16px rgba(0,0,0,.2)}
+  .tri .case .jeton{border-color:transparent;background:none}
+  .tri .cases.juste{background:#dff3e3;border-color:#2f9e44}
+  .tri .cases.juste::after{content:"✓";color:#2f9e44}
+  .tri .cases.faux{background:#fde2e2;border-color:var(--rouge)}
+  .tri .cases.faux::after{content:"✗";color:var(--rouge)}
+
+  /* Chaque cellule porte ses 4 bordures : une cellule cachée n'est pas dessinée,
+     le tableau se construit au fil des révélations. */
+  .cadre, .lignes, .comp, .arrondi{display:grid;padding:0 1px 1px 0}
+  .cadre > div, .lignes > div, .comp > div, .arrondi > div{border:1px solid var(--bord);margin:0 -1px -1px 0}
+
+  /* ---------- Rappel ---------- */
+  .cadre{grid-template-columns:1fr 300px}
+  .cadre > div{padding:10px 12px;display:flex;flex-direction:column;justify-content:center}
+  .cadre .fig{grid-column:2;grid-row:1 / span 2;align-items:center}
+  .cadre svg{width:100%;max-width:280px}
+
+  /* ---------- I : exemples de comparaison ---------- */
+  .comp{grid-template-columns:1fr 1.7fr 1.35fr 1fr}
+  .comp > div{padding:8px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .comp .entete{font-weight:700;background:#fafafa}
+  .comp .concl{font-weight:700;font-size:1.1em}
+
+  /* mini tableau de numération */
+  table.num{border-collapse:collapse;font-size:1.1em}
+  table.num th{font-weight:400;font-size:.6em;color:#555;padding:0 5px 2px;border-bottom:1px solid #999;line-height:1.1}
+  table.num td{min-width:2.1em;text-align:center;padding:1px 4px}
+  table.num th + th, table.num td + td{border-left:1px solid #ccc}
+  table.num .v{border-left:none !important;min-width:0;padding:0 1px;font-weight:700}
+  table.num .v + *{border-left:none !important}
+  table.num .cle{background:var(--surligne)}
+  table.num td.cle{color:var(--rouge);font-weight:700}
+  table.num .zero{color:#9aa0aa;font-style:italic}
+
+  /* ---------- II / III : texte + droite graduée ---------- */
+  .lignes{grid-template-columns:1fr 1.55fr}
+  .lignes > div{padding:10px 14px;display:flex;flex-direction:column;justify-content:center}
+  .lignes .fig{align-items:center}
+  .lignes .note{margin-top:10px}
+  .lignes svg{width:100%;max-width:460px;display:block}
+
+  /* ---------- encadrés ---------- */
+  .propriete{border:1.3px solid #a32020;border-radius:10px;padding:10px 14px;margin:14px 0}
+  .propriete .etiquette{color:#a32020;font-weight:700;margin-bottom:6px}
+  .propriete.methode{border-color:var(--bleu)}
+  .propriete.methode .etiquette{color:var(--bleu)}
+  .propriete.definition{border-color:var(--vocab)}
+  .propriete.definition .etiquette{color:var(--vocab)}
+  .propriete .schema{display:grid;grid-template-columns:1fr auto 1fr;gap:18px;align-items:center}
+  .propriete .schema > .fig{display:flex;justify-content:center}
+  .propriete{transition:border-color .45s}
+  .propriete .etiquette{transition:opacity .45s}
+  .propriete.vide{border-color:transparent}
+  .propriete.vide .etiquette{opacity:0}
+  ul.puces{margin:0;padding-left:1.1em}
+  ul.puces li{margin:0 0 8px}
+
+  /* décomposition de 12,376 */
+  .decomp{display:flex;gap:2px;font-size:1.7em;line-height:1}
+  .decomp span{display:flex;flex-direction:column;align-items:center}
+  .decomp small{font-size:.36em;color:#555;margin-top:6px;writing-mode:vertical-rl;transform:rotate(180deg);height:5.4em;text-align:left}
+
+  /* ---------- IV : tableau des arrondis ---------- */
+  .arrondi{grid-template-columns:1fr 1.8fr 1fr;max-width:720px}
+  .arrondi > div{padding:8px 10px;display:flex;align-items:center;justify-content:center;text-align:center}
+  .arrondi .entete{font-weight:700;background:#fafafa}
+  .arrondi .val{font-weight:700;font-size:1.1em}
+
+  @media (max-width:760px){
+    body{font-size:17px}
+    .cadre{grid-template-columns:1fr}
+    .cadre .fig{grid-column:auto;grid-row:auto}
+    .lignes{grid-template-columns:1fr}
+    .comp{grid-template-columns:1fr 1fr}
+    .comp .entete{display:none}
+
+    .propriete .schema{grid-template-columns:1fr}
+  }
+  @media print{
+    .outils, #btnDeplier{display:none}
+    .b.absent{opacity:1}
+    .b::after{display:none}
+    h2{opacity:1;background:none}
+    h2::before{content:none !important}
+    h2.masque{display:table}
+    .zone{display:block}
+    .propriete.vide{border-color:#a32020}
+    .propriete.methode.vide{border-color:var(--bleu)}
+    .propriete.definition.vide{border-color:var(--vocab)}
+    .propriete.vide .etiquette{opacity:1}
+  }
+</style>
+</head>
+<body>
+
+<button id="btnDeplier" title="Afficher le panneau (touche P)">◀ Panneau</button>
+<nav class="outils">
+  <button id="btnReplier" title="Replier le panneau (touche P)">Replier ▶</button>
+  <span class="compteur" id="compteur"></span>
+  <button id="btnSuivant" class="principal" title="Fait apparaître l’item suivant, couvert d’un « ? »">Prochain item de la partie →<small>sans contenu</small></button>
+  <div class="groupe"><span>Partie</span>
+    <button id="btnReveler" title="Faire apparaître tous les blocs de la partie, couverts d’un « ? »">Révéler la partie sans contenu</button>
+    <button id="btnMasquer" title="Vider la partie active">Masquer la partie</button>
+  </div>
+  <div class="groupe"><span>Tout le cours</span>
+    <button id="btnMontrerTout" title="Ouvrir toutes les parties avec leur contenu">Montrer tout</button>
+    <button id="btnMasquerTout" title="Ne garder que les titres">Masquer tout</button>
+  </div>
+  <div class="groupe">
+    <button id="btnOnglet" title="Ouvrir ce cours dans un nouvel onglet">↗ Nouvel onglet</button>
+  </div>
+  <div class="aide">Titre : ouvrir / replier la partie<br>→ : prochain item<br>← : annuler<br>Clic sur un « ? » : montrer / cacher<br><span style="background:#fff1c9;border:1px dashed #e3c25a;padding:0 4px">?</span> jaune : à compléter<br>P : replier le panneau</div>
+</nav>
+
+<main>
+
+<div class="chapitre">Les fractions</div>
+
+<!-- ======================= I ======================= -->
+<h2>I) Exemple d’introduction</h2>
+
+<div class="b texte">On partage <b>4 disques</b> entre <b>3 personnes</b> : <span class="alice">Alice</span>, <span class="bilal">Bilal</span> et <span class="chloe">Chloé</span>.</div>
+
+<div class="duo">
+  <div class="b"><p><b>Partage n°1 :</b> on coupe chaque disque en 3.</p><div class="fig" data-fig="partage1"></div></div>
+  <div class="b"><p><b>Partage n°2 :</b> chacun prend un disque entier, puis on coupe le dernier en 3.</p><div class="fig" data-fig="partage2"></div></div>
+</div>
+
+<div class="trio">
+  <div class="b"><p>Chacun reçoit 4 tiers de disque :</p>
+    <div class="calc">
+      <span>4 : 3</span><span>=</span><span><span class="b trou">(1 + 1 + 1 + 1) : 3</span></span>
+      <span></span><span>=</span><span><span class="b trou"><span class="fr"><i>1</i><i>3</i></span> + <span class="fr"><i>1</i><i>3</i></span> + <span class="fr"><i>1</i><i>3</i></span> + <span class="fr"><i>1</i><i>3</i></span></span></span>
+      <span></span><span>=</span><span><span class="b trou"><span class="fr"><i>4</i><i>3</i></span></span></span>
+    </div></div>
+  <div class="b"><p>Part d’<span class="alice">Alice</span> :</p><div class="fig" data-fig="alice"></div></div>
+  <div class="b"><p>Chacun reçoit 1 disque et 1 tiers :</p>
+    <div class="calc">
+      <span>4 : 3</span><span>=</span><span><span class="b trou">(3 + 1) : 3</span></span>
+      <span></span><span>=</span><span><span class="b trou">(3 : 3) + (1 : 3)</span></span>
+      <span></span><span>=</span><span><span class="b trou">1 + <span class="fr"><i>1</i><i>3</i></span></span></span>
+    </div></div>
+</div>
+
+<div class="b texte centre">Chacun reçoit la même part : <span class="nb">4 : 3 = <span class="b trou"><span class="fr"><i>4</i><i>3</i></span></span> = <span class="b trou">4 × <span class="fr"><i>1</i><i>3</i></span></span> = <span class="b trou">1 + <span class="fr"><i>1</i><i>3</i></span></span></span></div>
+
+<!-- ======================= II ======================= -->
+<h2>II) Fraction et quotient</h2>
+
+<div class="propriete definition">
+  <div class="etiquette">Définition :</div>
+  <div class="b texte">Soient <i>a</i> et <i>b</i> deux nombres entiers avec <i>b</i> ≠ 0.</div>
+  <div class="b texte">• La fraction <span class="fr"><i>1</i><i><i>b</i></i></span> est le <span class="b trou"><span class="vocab">quotient</span></span> de 1 par <i>b</i> :
+    <span class="nb"><span class="fr"><i>1</i><i><i>b</i></i></span> = 1 : <i>b</i></span>.</div>
+  <div class="b">• La fraction <span class="fr"><i><i>a</i></i><i><i>b</i></i></span> est le <span class="b trou"><span class="vocab">produit</span></span> <span class="nb"><i>a</i> × <span class="fr"><i>1</i><i><i>b</i></i></span></span>,
+    mais c’est aussi le <span class="b trou"><span class="vocab">quotient</span></span> <i>a</i> : <i>b</i> :
+    <span class="nb"><span class="fr"><i><i>a</i></i><i><i>b</i></i></span> = <i>a</i> × <span class="fr"><i>1</i><i><i>b</i></i></span> = <i>a</i> : <i>b</i></span>.</div>
+</div>
+
+<div class="propriete definition">
+  <div class="etiquette">Définition :</div>
+  <div class="b">Dans la fraction <span class="fr"><i><i class="cb">a</i></i><i><i class="cr">b</i></i></span> : <i class="cb">a</i> est le <span class="b trou"><span class="vocab">numérateur</span></span> de la fraction
+    et <i class="cr">b</i> est le <span class="b trou"><span class="vocab">dénominateur</span></span> de la fraction.</div>
+</div>
+
+<p class="etiq b"><span class="ex">Exemples :</span></p>
+<div class="b texte">• Trois dixièmes : <span class="nb"><span class="fr"><i>3</i><i>10</i></span> = <span class="b trou">3 × <span class="fr"><i>1</i><i>10</i></span></span> = <span class="b trou">3 × 0,1</span> = <span class="b trou">0,3</span></span>
+  <span class="sep"></span>mais aussi <span class="nb"><span class="fr"><i>3</i><i>10</i></span> = <span class="b trou">3 : 10</span> = <span class="b trou">0,3</span></span></div>
+<div class="b texte">• Six tiers : <span class="nb"><span class="fr"><i>6</i><i>3</i></span> = <span class="b trou">(<span class="fr"><i>1</i><i>3</i></span> + <span class="fr"><i>1</i><i>3</i></span> + <span class="fr"><i>1</i><i>3</i></span>) + (<span class="fr"><i>1</i><i>3</i></span> + <span class="fr"><i>1</i><i>3</i></span> + <span class="fr"><i>1</i><i>3</i></span>)</span> = <span class="b trou">1 + 1</span> = <span class="b trou">2</span></span>
+  <span class="sep"></span>mais aussi <span class="nb"><span class="fr"><i>6</i><i>3</i></span> = <span class="b trou">6 : 3</span> = <span class="b trou">2</span></span></div>
+<div class="b texte">• Treize tiers : <span class="nb"><span class="fr"><i>13</i><i>3</i></span> = <span class="b trou"><span class="fr"><i>12</i><i>3</i></span> + <span class="fr"><i>1</i><i>3</i></span></span> = <span class="b trou">4 + <span class="fr"><i>1</i><i>3</i></span></span></span>
+  <span class="sep"></span>mais aussi <span class="nb"><span class="fr"><i>13</i><i>3</i></span> = <span class="b trou">13 : 3</span> = <span class="b trou">(12 + 1) : 3</span> = <span class="b trou">(12 : 3) + (1 : 3)</span> = <span class="b trou">4 + <span class="fr"><i>1</i><i>3</i></span></span></span></div>
+
+<div class="propriete">
+  <div class="etiquette">Propriété :</div>
+  <div class="b texte">Soit une fraction <span class="fr"><i><i>a</i></i><i><i>b</i></i></span> avec <i>b</i> ≠ 0 :</div>
+  <div class="b ligne3">
+    <span>• si <i>a</i> &lt; <i>b</i> alors <span class="nb"><span class="fr"><i><i>a</i></i><i><i>b</i></i></span> <span class="b trou">&lt;</span> 1</span></span>
+    <span>• si <i>a</i> = <i>b</i> alors <span class="nb"><span class="fr"><i><i>a</i></i><i><i>b</i></i></span> <span class="b trou">=</span> 1</span></span>
+    <span>• si <i>a</i> &gt; <i>b</i> alors <span class="nb"><span class="fr"><i><i>a</i></i><i><i>b</i></i></span> <span class="b trou">&gt;</span> 1</span></span>
+  </div>
+</div>
+
+<!-- ======================= III ======================= -->
+<h2>III) Nombre mixte</h2>
+
+<div class="propriete definition">
+  <div class="etiquette">Définition :</div>
+  <div class="b">On appelle <span class="vocab">nombre mixte</span> toute somme d’un entier et d’une fraction <span class="b trou">inférieure à 1</span>.</div>
+</div>
+
+<p class="etiq b"><span class="ex">Exemples :</span></p>
+<div class="b texte">• Fraction → nombre mixte : <span class="nb"><span class="fr"><i>11</i><i>4</i></span> = <span class="b trou"><span class="fr"><i>8</i><i>4</i></span> + <span class="fr"><i>3</i><i>4</i></span></span> = <span class="b trou">2 + <span class="fr"><i>3</i><i>4</i></span></span></span></div>
+<div class="b texte">• Nombre mixte → fraction : <span class="nb">3 + <span class="fr"><i>2</i><i>5</i></span> = <span class="b trou"><span class="fr"><i>15</i><i>5</i></span> + <span class="fr"><i>2</i><i>5</i></span></span> = <span class="b trou"><span class="fr"><i>17</i><i>5</i></span></span></span></div>
+
+<p class="etiq b"><span class="ex">Exemple :</span> avec les durées (1 h = 60 min) :</p>
+<div class="b texte duree"><span class="nb"><span class="fr"><i>7</i><i>4</i></span> h = <span class="b trou">1 h + <span class="fr"><i>3</i><i>4</i></span> h</span> = <span class="b trou">1 h + 45 min</span></span>
+  <span>en effet : <span class="nb"><span class="fr"><i>1</i><i>4</i></span> h = <span class="b trou">1 h : 4</span> = <span class="b trou">15 min</span></span></span></div>
+<div class="b texte duree"><span class="nb"><span class="fr"><i>23</i><i>10</i></span> h = <span class="b trou">2 h + <span class="fr"><i>3</i><i>10</i></span> h</span> = <span class="b trou">2 h + 18 min</span></span>
+  <span>en effet : <span class="nb"><span class="fr"><i>1</i><i>10</i></span> h = <span class="b trou">1 h : 10</span> = <span class="b trou">6 min</span></span></span></div>
+
+<!-- ======================= IV ======================= -->
+<h2>IV) Prendre une fraction d’une quantité</h2>
+
+<div class="propriete methode">
+  <div class="etiquette">Méthode :</div>
+  <div class="b texte">Pour prendre les <span class="fr"><i><i>a</i></i><i><i>b</i></i></span> d’une quantité, on <span class="b trou">divise</span> la quantité par <i>b</i>,
+    puis on <span class="b trou">multiplie</span> par <i>a</i> :</div>
+  <div class="b centre"><span class="nb"><span class="fr"><i><i>a</i></i><i><i>b</i></i></span> × quantité = (quantité : <i>b</i>) × <i>a</i></span></div>
+</div>
+
+<div class="b texte"><span class="ex">Exemple :</span> on a mangé les deux tiers d’une tablette de chocolat de 120 g.
+  Quelle masse de chocolat a-t-on mangée ?</div>
+<div class="b fig centre" data-fig="tablette"></div>
+<div class="b texte centre">Masse de chocolat mangée :
+  <span class="nb"><span class="fr"><i>2</i><i>3</i></span> × 120 g = <span class="b trou">(120 g : 3) × 2</span> = <span class="b trou">40 g × 2</span> = <span class="b trou">80 g</span></span></div>
+
+<!-- ======================= V ======================= -->
+<h2>V) Fraction et droite graduée</h2>
+
+<div class="b fig" data-fig="droite"></div>
+
+<p class="etiq b"><span class="ex">Exemples :</span></p>
+<div class="b texte">• L’abscisse du point <i class="r">A</i> est <span class="b trou"><span class="fr"><i>3</i><i>4</i></span></span>.</div>
+<div class="b texte">• L’abscisse du point <i class="r">B</i> est <span class="nb"><span class="fr"><i>9</i><i>4</i></span> = <span class="b trou"><span class="fr"><i>8</i><i>4</i></span> + <span class="fr"><i>1</i><i>4</i></span></span> = <span class="b trou">2 + <span class="fr"><i>1</i><i>4</i></span></span></span>.</div>
+
+<!-- ======================= VI ======================= -->
+<h2>VI) Égalité de quotients</h2>
+
+<div class="propriete">
+  <div class="etiquette">Propriété :</div>
+  <div class="b texte">Un quotient ne change pas quand on <span class="b trou">multiplie</span> ou quand on <span class="b trou">divise</span> le numérateur
+    et le dénominateur par un <b>même nombre</b> <i>k</i> non nul :</div>
+  <div class="b centre"><span class="nb"><span class="fr"><i><i>a</i></i><i><i>b</i></i></span> = <span class="fr"><i><i>a</i> × <i>k</i></i><i><i>b</i> × <i>k</i></i></span></span>
+    <span class="sep"></span><span class="nb"><span class="fr"><i><i>a</i></i><i><i>b</i></i></span> = <span class="fr"><i><i>a</i> : <i>k</i></i><i><i>b</i> : <i>k</i></i></span></span></div>
+</div>
+
+<div class="duo">
+  <div class="b"><div class="fig" data-fig="moities"></div>
+    <p class="texte">La même part : <span class="nb"><span class="fr"><i>1</i><i>2</i></span> = <span class="b trou"><span class="fr"><i>2</i><i>4</i></span></span></span></p></div>
+  <div class="b"><div class="fig" data-fig="cinquiemes"></div>
+    <p class="texte">On partage aussi en 3 : <span class="nb"><span class="fr"><i>2</i><i>5</i></span> = <span class="b trou"><span class="fr"><i>2 × 3</i><i>5 × 3</i></span></span> = <span class="b trou"><span class="fr"><i>6</i><i>15</i></span></span></span></p></div>
+</div>
+
+<p class="etiq b"><span class="ex">Exemples :</span></p>
+<div class="b texte">• <span class="nb"><span class="fr"><i>15</i><i>20</i></span> = <span class="b trou"><span class="fr"><i>15 : 5</i><i>20 : 5</i></span></span> = <span class="b trou"><span class="fr"><i>3</i><i>4</i></span></span></span>
+  <span class="sep"></span><span class="comment">On dit qu’on a <span class="b trou">simplifié</span> la fraction par 5.</span></div>
+<div class="b texte">• Écrire <span class="fr"><i>3</i><i>4</i></span> avec le dénominateur 100 : <span class="nb"><span class="fr"><i>3</i><i>4</i></span> = <span class="b trou"><span class="fr"><i>3 × 25</i><i>4 × 25</i></span></span> = <span class="b trou"><span class="fr"><i>75</i><i>100</i></span></span> = <span class="b trou">0,75</span></span></div>
+
+</main>
+
+<script>
+/* =====================================================================
+   FIGURES (reprises du .tex : disques en tiers, tablette, droite graduée)
+   ===================================================================== */
+const COUL = {A:'#a9bdf2', B:'#f2b0b0', C:'#ade0ad'};
+const pt = (cx, cy, r, a) => [cx + r*Math.cos(a*Math.PI/180), cy - r*Math.sin(a*Math.PI/180)];
+function secteur(cx, cy, r, a1, a2, fill, trait = false){
+  const [x1, y1] = pt(cx, cy, r, a1), [x2, y2] = pt(cx, cy, r, a2);
+  return `<path d="M${cx} ${cy}L${x1} ${y1}A${r} ${r} 0 0 0 ${x2} ${y2}Z" fill="${fill}" ${trait ? 'stroke="#111" stroke-width=".05" stroke-linejoin="round"' : ''}/>`;
+}
+const cercle = (cx, cy, r, fill = 'none') => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="#111" stroke-width=".05"/>`;
+const rayons = (cx, cy, r) => [90, 210, 330].map(a => { const [x, y] = pt(cx, cy, r, a); return `<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#111" stroke-width=".05"/>`; }).join('');
+const tiers = (cx, cy, r, c = ['A','B','C']) =>
+  secteur(cx, cy, r, 90, 210, COUL[c[0]]) + secteur(cx, cy, r, 210, 330, COUL[c[1]]) + secteur(cx, cy, r, 330, 450, COUL[c[2]]) + cercle(cx, cy, r) + rayons(cx, cy, r);
+const svg = (vb, w, contenu) => `<svg viewBox="${vb}" width="${w}">${contenu}</svg>`;
+
+const FIGS = {
+  partage1: () => svg('-0.8 -0.8 6.4 1.6', 300, [0,1,2,3].map(i => tiers(1.6*i, 0, .7)).join('')),
+  partage2: () => svg('-0.8 -0.8 6.4 1.6', 300,
+    cercle(0, 0, .7, COUL.A) + cercle(1.6, 0, .7, COUL.B) + cercle(3.2, 0, .7, COUL.C) + tiers(4.8, 0, .7)),
+  alice: () => svg('-0.7 -0.7 3.4 1.4', 170,
+    tiers(0, 0, .6, ['A','A','A']) + `<text x="1" y=".14" font-size=".45" text-anchor="middle">+</text>` + secteur(2, 0, .6, 90, 210, COUL.A, true)),
+  tablette: () => svg('-0.1 -0.1 9.2 1.4', 420,
+    `<rect x="0" y="0" width="6" height="1.2" fill="#c9a27a"/><rect x="0" y="0" width="9" height="1.2" fill="none" stroke="#111" stroke-width=".06"/>` +
+    [3, 6].map(x => `<line x1="${x}" y1="0" x2="${x}" y2="1.2" stroke="#111" stroke-width=".06"/>`).join('')),
+  cinquiemes: () => {
+    const trait = (x1, y1, x2, y2, w = .06, c = '#111') => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}"/>`;
+    const rect = dx => `<rect x="${dx}" y="0" width="2" height="3" fill="#c9a27a"/>` +
+      [1, 2, 3, 4].map(x => trait(dx + x, 0, dx + x, 3)).join('') +
+      `<rect x="${dx}" y="0" width="5" height="3" fill="none" stroke="#111" stroke-width=".08"/>`;
+    return svg('-0.1 -0.1 12.2 3.2', 320,
+      rect(0) + `<text x="6" y="1.75" font-size=".8" text-anchor="middle">→</text>` +
+      rect(7) + [1, 2].map(y => trait(7, y, 12, y, .06, 'var(--rouge)')).join(''));
+  },
+  moities: () => svg('-0.1 -0.1 8.2 2.9', 360,
+    `<rect x="0" y="0" width="4" height="1.1" fill="#c9a27a"/><rect x="0" y="1.6" width="4" height="1.1" fill="#c9a27a"/>` +
+    `<rect x="0" y="0" width="8" height="1.1" fill="none" stroke="#111" stroke-width=".06"/><rect x="0" y="1.6" width="8" height="1.1" fill="none" stroke="#111" stroke-width=".06"/>` +
+    [4].map(x => `<line x1="${x}" y1="0" x2="${x}" y2="1.1" stroke="#111" stroke-width=".06"/>`).join('') +
+    [2, 4, 6].map(x => `<line x1="${x}" y1="1.6" x2="${x}" y2="2.7" stroke="#111" stroke-width=".06"/>`).join('')),
+  droite: () => {
+    let c = `<line x1="-.3" y1="0" x2="12.6" y2="0" stroke="#111" stroke-width=".05" marker-end="url(#fn)"/>`;
+    for (let x = 0; x <= 12; x++){
+      const h = x % 4 ? .1 : .18;
+      c += `<line x1="${x}" y1="${-h}" x2="${x}" y2="${h}" stroke="#111" stroke-width="${x % 4 ? .035 : .06}"/>` +
+           `<text x="${x}" y=".55" font-size=".32" text-anchor="middle">${x}</text>` +
+           `<line x1="${x-.16}" y1=".64" x2="${x+.16}" y2=".64" stroke="#111" stroke-width=".025"/>` +
+           `<text x="${x}" y=".95" font-size=".32" text-anchor="middle">4</text>`;
+      if (x % 4 === 0) c += `<text x="${x}" y="1.4" font-size=".32" text-anchor="middle">= ${x/4}</text>`;
+    }
+    [[3, 'A'], [9, 'B']].forEach(([x, n]) =>
+      c += `<circle cx="${x}" cy="0" r=".09" fill="var(--rouge)"/><text x="${x}" y="-.25" font-size=".36" text-anchor="middle" fill="var(--rouge)" font-style="italic" font-weight="700">${n}</text>`);
+    return svg('-0.5 -0.7 13.4 2.3', '100%', c);
+  },
+};
+document.body.insertAdjacentHTML('afterbegin', `<svg width="0" height="0" style="position:absolute"><defs>
+  <marker id="fn" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#111"/></marker>
+</defs></svg>`);
+document.querySelectorAll('[data-fig]').forEach(el => el.innerHTML = FIGS[el.dataset.fig]());
+</script>
+<script>
+/* =====================================================================
+   EXEMPLE À TRIER : on glisse les nombres (ou on les touche) dans les cases « ? < ? < … ».
+   Toucher un nombre de la réserve le place dans la première case libre ;
+   toucher un nombre placé le renvoie dans la réserve.
+   ===================================================================== */
+const TRIS = [...document.querySelectorAll('.tri')].map(el => {
+  // modele : « ? » = case à remplir, « < » / « > » = signe, sinon nombre écrit
+  const modele = el.dataset.modele.split(';'), solution = el.dataset.solution.split(';');
+  el.innerHTML = `<div class="reserve"></div><div class="cases">${modele.map(m =>
+    m === '?' ? '<span class="case"></span>' :
+    m === '<' || m === '>' ? `<span class="signe">${m === '<' ? '&lt;' : '&gt;'}</span>` :
+    `<span class="fixe">${m}</span>`).join('')}</div>`;
+  const reserve = el.querySelector('.reserve'), cases = [...el.querySelectorAll('.case')], ligne = el.querySelector('.cases');
+  const jetons = el.dataset.jetons.split(';').map(t => { const j = document.createElement('span'); j.className = 'jeton'; j.textContent = t; return j; });
+  const val = t => parseFloat(t.replace(',', '.'));
+
+  // juste dès que la chaîne d'inégalités est vraie (toute réponse correcte est acceptée)
+  function verifier(){
+    const plein = cases.every(c => c.firstChild);
+    const termes = [...ligne.children].filter(e => !e.classList.contains('signe')).map(e => val(e.textContent));
+    const signes = [...ligne.querySelectorAll('.signe')].map(e => e.textContent);
+    const juste = plein && signes.every((sg, k) => sg === '<' ? termes[k] < termes[k+1] : termes[k] > termes[k+1]);
+    ligne.classList.toggle('juste', juste);
+    ligne.classList.toggle('faux', plein && !juste);
+    el.classList.toggle('fini', juste);
+  }
+  function deposer(j, cible){
+    if (cible.classList.contains('case') && cible.firstChild && cible.firstChild !== j)
+      j.parentElement.appendChild(cible.firstChild);          // échange avec le nombre déjà en place
+    cible.appendChild(j);
+    verifier();
+  }
+  const cibleSous = (x, y) => document.elementsFromPoint(x, y).map(e => e.closest('.case, .reserve')).find(e => e && el.contains(e));
+
+  jetons.forEach(j => j.addEventListener('pointerdown', ev => {
+    ev.preventDefault(); ev.stopPropagation();
+    j.setPointerCapture(ev.pointerId);
+    const x0 = ev.clientX, y0 = ev.clientY;
+    let bouge = false, survol = null;
+    const move = e => {
+      if (!bouge && Math.hypot(e.clientX - x0, e.clientY - y0) < 6) return;
+      bouge = true; j.classList.add('tire');
+      j.style.transform = `translate(${e.clientX - x0}px, ${e.clientY - y0}px)`;
+      j.style.pointerEvents = 'none';
+      const c = cibleSous(e.clientX, e.clientY);
+      if (c !== survol){ survol?.classList.remove('survol'); survol = c; c?.classList.add('survol'); }
+      j.style.pointerEvents = '';
+    };
+    const up = e => {
+      j.removeEventListener('pointermove', move); j.removeEventListener('pointerup', up); j.removeEventListener('pointercancel', up);
+      j.classList.remove('tire'); j.style.transform = ''; survol?.classList.remove('survol');
+      if (!bouge){                                            // simple toucher
+        if (j.parentElement === reserve){ const libre = cases.find(c => !c.firstChild); if (libre) deposer(j, libre); }
+        else deposer(j, reserve);
+        return;
+      }
+      j.style.pointerEvents = 'none';
+      const c = cibleSous(e.clientX, e.clientY);
+      j.style.pointerEvents = '';
+      if (c) deposer(j, c);
+    };
+    j.addEventListener('pointermove', move); j.addEventListener('pointerup', up); j.addEventListener('pointercancel', up);
+  }));
+  el.addEventListener('click', ev => ev.stopPropagation());   // manipuler le tri ne recache pas l'item
+
+  return {
+    el,
+    vider(){ jetons.forEach(j => reserve.appendChild(j)); verifier(); },
+    resoudre(){ jetons.forEach(j => reserve.appendChild(j)); cases.forEach((c, k) => c.appendChild(jetons.find(j => j.textContent === solution[k]))); verifier(); },
+  };
+});
+
+/* =====================================================================
+   RÉVÉLATION (même fonctionnement que le cours « Bases de la géométrie »)
+   Au départ seuls les titres sont visibles. Cliquer un titre ouvre sa partie
+   et la rend active. Chaque bloc .b passe par :
+     absent → « Prochain item de la partie » le fait apparaître, couvert d'un « ? »
+     cache ⇄ révélé : le clic sur le bloc bascule entre « ? » et contenu
+   ===================================================================== */
+const items = [...document.querySelectorAll('.b:not(.trou)')];   // 1er niveau : les items de la partie
+const trous = [...document.querySelectorAll('.b.trou')];          // 2e niveau : à compléter dans un item
+
+const titres = [...document.querySelectorAll('h2')];
+const zones = titres.map(t => {
+  const z = document.createElement('div');
+  z.className = 'zone';
+  while (t.nextElementSibling && t.nextElementSibling.tagName !== 'H2') z.appendChild(t.nextElementSibling);
+  t.after(z);
+  return z;
+});
+const NUM = titres.map(t => t.textContent.split(')')[0].trim());
+const blocsDe = i => items.filter(e => zones[i].contains(e));
+
+let partie = null;
+const historique = titres.map(() => []);
+const proprietes = [...document.querySelectorAll('.propriete')];
+const compteur = document.getElementById('compteur');
+const boutons = ['btnSuivant','btnMasquer','btnReveler'].map(id => document.getElementById(id));
+
+// Clic sur un titre : on n'affiche plus que cette partie (titre + contenu) ;
+// nouveau clic sur son titre : elle se replie et tous les titres réapparaissent.
+// Le contenu déjà dévoilé est conservé pour la prochaine ouverture.
+function replierTout(){
+  partie = null;
+  zones.forEach(z => z.classList.remove('ouverte'));
+  titres.forEach(t => t.classList.remove('actif', 'vu', 'masque'));
+}
+titres.forEach((t, i) => t.addEventListener('click', () => {
+  if (partie === i && zones[i].classList.contains('ouverte')){
+    replierTout();
+    maj();
+    window.scrollTo({top:0, behavior:'smooth'});
+    return;
+  }
+  partie = i;
+  zones.forEach((z, k) => z.classList.toggle('ouverte', k === i));
+  titres.forEach((u, k) => { u.classList.toggle('actif', k === i); u.classList.toggle('masque', k !== i); u.classList.remove('vu'); });
+  window.scrollTo({top:0, behavior:'smooth'});
+  maj();
+}));
+
+function maj(){
+  titres.forEach((t, k) => t.classList.toggle('ouvert', zones[k].classList.contains('ouverte')));
+  proprietes.forEach(p => p.classList.toggle('vide', !p.querySelector('.b:not(.trou):not(.absent)')));
+  if (partie === null){
+    compteur.textContent = 'Cliquer un titre pour commencer';
+    boutons.forEach(b => b.disabled = true);
+    return;
+  }
+  const reste = blocsDe(partie).filter(e => e.classList.contains('absent')).length;
+  const nom = NUM[partie] === 'Rappel' ? 'Rappel' : 'Partie ' + NUM[partie];
+  compteur.textContent = `${nom} · ${reste ? reste + ' item' + (reste > 1 ? 's' : '') + ' à venir' : 'terminée'}`;
+  boutons.forEach(b => b.disabled = false);
+  boutons[0].disabled = !reste;
+}
+function suivant(){
+  if (partie === null) return;
+  // prochain item de la partie : il apparaît couvert d'un « ? » (contenu montré au clic)
+  const e = blocsDe(partie).find(e => e.classList.contains('absent'));
+  if (!e) return;
+  e.classList.remove('absent');
+  historique[partie].push({e, etape:'apparu'});
+  e.scrollIntoView({block:'nearest', behavior:'smooth'});
+  maj();
+}
+function precedent(){
+  if (partie === null) return;
+  const h = historique[partie].pop();
+  if (!h) return;
+  if (h.etape === 'apparu') h.e.classList.add('absent');
+  else h.e.classList.toggle('cache', h.etape === 'revele');
+  h.e.scrollIntoView({block:'nearest', behavior:'smooth'});
+  maj();
+}
+// 'absent' : partie remise à blanc · 'cache' : tous les blocs sous « ? » · 'revele' : tout le contenu
+function tout(etat, i){
+  if (i === null) return;
+  blocsDe(i).forEach(e => {
+    e.classList.toggle('absent', etat === 'absent');
+    e.classList.toggle('cache', etat !== 'revele');
+  });
+  trous.filter(e => zones[i].contains(e)).forEach(e => e.classList.toggle('cache', etat !== 'revele'));
+  TRIS.filter(t => zones[i].contains(t.el)).forEach(t => etat === 'revele' ? t.resoudre() : t.vider());
+  historique[i].length = 0;
+  maj();
+}
+
+[...items, ...trous].forEach(e => e.addEventListener('click', ev => {
+  ev.stopPropagation();   // un item peut être dans un autre (signe et raison dans la ligne d'exemples)
+  if (e.classList.contains('absent')) return;
+  const etape = e.classList.toggle('cache') ? 'recache' : 'revele';
+  const i = zones.findIndex(z => z.contains(e));
+  historique[i].push({e, etape});
+  maj();
+}));
+
+// Panneau rétractable (état mémorisé dans ce navigateur)
+function replier(oui){
+  document.body.classList.toggle('replie', oui);
+  try { localStorage.setItem('panneauReplie', oui ? '1' : ''); } catch(e){}
+}
+document.getElementById('btnReplier').onclick = () => replier(true);
+document.getElementById('btnDeplier').onclick = () => replier(false);
+try { replier(localStorage.getItem('panneauReplie') === '1'); } catch(e){}
+
+document.getElementById('btnOnglet').onclick = () => window.open(location.href, '_blank');
+boutons[0].onclick = suivant;
+boutons[1].onclick = () => tout('absent', partie);
+boutons[2].onclick = () => tout('cache', partie);
+
+// Masquer tout : retour au départ, seuls les titres restent.
+document.getElementById('btnMasquerTout').onclick = () => {
+  replierTout();
+  titres.forEach((t, i) => tout('absent', i));
+  window.scrollTo({top:0, behavior:'smooth'});
+};
+// Montrer tout : toutes les parties ouvertes, tout le contenu visible.
+document.getElementById('btnMontrerTout').onclick = () => {
+  zones.forEach(z => z.classList.add('ouverte'));
+  titres.forEach((t, i) => { t.classList.remove('masque'); t.classList.add('vu'); tout('revele', i); });
+};
+
+document.addEventListener('keydown', ev => {
+  if (['ArrowRight',' ','PageDown','Enter'].includes(ev.key)){ ev.preventDefault(); suivant(); }
+  else if (['ArrowLeft','PageUp','Backspace'].includes(ev.key)){ ev.preventDefault(); precedent(); }
+  else if (ev.key === 'p' || ev.key === 'P') replier(!document.body.classList.contains('replie'));
+});
+
+titres.forEach((t, i) => tout('absent', i));
+</script>
+</body>
+</html>
